@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SUN_IN old web chat</title>
+  <style>
+    body {
+      margin: 0;
+      background: #00008a;
+      color: #f0f0f0;
+      font-family: Verdana, Tahoma, Arial, sans-serif;
+    }
+
+    a {
+      color: #4da6ff;
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+    .page {
+      width: 940px;
+      margin: 0 auto;
+      padding: 22px 0;
+    }
+    .frame {
+      border: 1px solid #ffee00;
+      background: #000;
+      min-height: 620px;
+      box-shadow: inset 0 0 0 1px #3f3f3f;
+    }
+    .banner {
+      text-align: left;
+      color: #fff;
+      font-size: 48px;
+      font-weight: 800;
+      letter-spacing: 2px;
+      padding: 28px 20px 18px;
+      border-bottom: 2px dashed #00ff00;
+      text-shadow: 2px 2px #606060;
+    }
+    .content {
+      display: flex;
+      min-height: 430px;
+    }
+    .nav {
+      width: 230px;
+      border-right: 1px solid #9d0065;
+      padding: 14px 16px;
+      box-sizing: border-box;
+    }
+    .nav h3 {
+      margin: 0 0 12px;
+      color: #fff;
+      font-size: 28px;
+    }
+    .nav ul {
+      margin: 0;
+      padding-left: 0;
+      list-style: none;
+      font-size: 18px;
+      font-weight: 700;
+      line-height: 1.35;
+    }
+    .nav li { color: #00ffff; }
+    .main {
+      flex: 1;
+      padding: 16px;
+      box-sizing: border-box;
+    }
+    .title {
+      margin: 0 0 10px;
+      font-size: 30px;
+      color: #fff;
+      text-shadow: 2px 2px #7a7a7a;
+    }
+    .old-gray { color: #9b9b9b; }
+    .form-row {
+      margin-bottom: 8px;
+      display: grid;
+      grid-template-columns: 58px 1fr 58px 95px 58px 1fr auto;
+      gap: 6px;
+      align-items: center;
+      font-size: 20px;
+    }
+    .msg-row {
+      margin-bottom: 8px;
+      display: grid;
+      grid-template-columns: 42px 140px 1fr 100px;
+      gap: 6px;
+      align-items: center;
+      font-size: 20px;
+    }
+    .label {
+      color: #ffd37a;
+      font-weight: 700;
+      text-align: right;
+    }
+    input[type="text"], input[type="number"] {
+      width: 100%;
+      box-sizing: border-box;
+      border: 1px solid #7a7a7a;
+      background: #101010;
+      color: #d4ffff;
+      padding: 4px 6px;
+      font-size: 18px;
+      font-family: Consolas, monospace;
+    }
+    button {
+      border: 1px solid #9a9a9a;
+      background: #1d1d1d;
+      color: #fff;
+      padding: 4px 8px;
+      font-size: 17px;
+      cursor: pointer;
+    }
+    button:hover { background: #2c2c2c; }
+    .help {
+      margin: 8px 0 10px;
+      color: #b8ffb8;
+      font-size: 16px;
+    }
+    #log {
+      height: 245px;
+      background: #040404;
+      border: 1px solid #00a000;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      font-family: "Lucida Console", Consolas, monospace;
+      color: #eee;
+      font-size: 16px;
+      padding: 8px;
+      line-height: 1.3;
+    }
+    .footer {
+      border-top: 1px solid #00a000;
+      text-align: center;
+      color: #ddd;
+      padding: 10px 8px 14px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="frame">
+      <div class="banner">Sun In alpha CHAT</div>
+
+      <div class="content">
+        <aside class="nav">
+          <h3>о чатике:</h3>
+          <ul>
+            <li>- Главная</li>
+            <li>- Подключение</li>
+            <li>- Личные чаты</li>
+            <li>- Статус</li>
+          </ul>
+        </aside>
+
+        <main class="main">
+          <span class="old-gray">!!! NEW !!!</span>
+          Привет, это чат by
+          <a href="https://github.com/qirieshkaclwn" target="_blank">qirieshka</a>
+          <div class="form-row">
+            <div class="label">Host</div>
+            <input id="host" type="text" value="127.0.0.1" />
+            <div class="label">Port</div>
+            <input id="port" type="number" value="8888" />
+            <div class="label">Nick</div>
+            <input id="nickname" type="text" placeholder="q1" />
+            <div>
+              <button onclick="connectChat()">Connect</button>
+              <button onclick="disconnectChat()">Off</button>
+            </div>
+          </div>
+
+          <div class="msg-row">
+            <div class="label">To</div>
+            <input id="to" type="text" placeholder="q2" />
+            <input id="text" type="text" placeholder="message..." />
+            <button onclick="sendMsg()">Send</button>
+          </div>
+
+          <div class="help">Только приватные сообщения: укажи получателя в поле <b>To</b>.</div>
+          <div id="log"></div>
+        </main>
+      </div>
+
+      <div class="footer">
+        Best viewed in Internet Explorer 6.0<br />
+        800x600 resolutionn
+      </div>
+    </div>
+  </div>
+
+  <script>
+    var lastId = 0;
+
+    function addLog(line) {
+      var box = document.getElementById("log");
+      box.textContent += line + "\n";
+      box.scrollTop = box.scrollHeight;
+    }
+
+    async function api(path, method, body) {
+      var res = await fetch(path, {
+        method: method || "GET",
+        headers: { "Content-Type": "application/json" },
+        body: body ? JSON.stringify(body) : undefined
+      });
+      if (!res.ok) {
+        var txt = await res.text();
+        throw new Error(txt || ("HTTP " + res.status));
+      }
+      return await res.json();
+    }
+
+    async function connectChat() {
+      try {
+        var nickname = document.getElementById("nickname").value.trim();
+        if (!nickname) {
+          addLog("[ERR] Укажи nickname");
+          return;
+        }
+        var host = document.getElementById("host").value.trim() || "127.0.0.1";
+        var port = parseInt(document.getElementById("port").value, 10) || 8888;
+        await api("/api/connect", "POST", { host: host, port: port, nickname: nickname });
+        addLog("[OK] Connected as " + nickname);
+      } catch (e) {
+        addLog("[ERR] " + e.message);
+      }
+    }
+
+    async function disconnectChat() {
+      try {
+        await api("/api/disconnect", "POST");
+        addLog("[OK] Disconnected");
+      } catch (e) {
+        addLog("[ERR] " + e.message);
+      }
+    }
+
+    async function sendMsg() {
+      try {
+        var to = document.getElementById("to").value.trim();
+        var text = document.getElementById("text").value.trim();
+        if (!to || !text) {
+          addLog("[ERR] Нужны поля To и message");
+          return;
+        }
+        await api("/api/send", "POST", { to: to, text: text });
+        document.getElementById("text").value = "";
+      } catch (e) {
+        addLog("[ERR] " + e.message);
+      }
+    }
+
+    function renderEvent(item) {
+      var p = item.payload || {};
+      if (item.type === "message") {
+        addLog("[IN ] " + (p.from_user || "?") + ": " + (p.text || ""));
+      } else if (item.type === "outgoing") {
+        addLog("[OUT] -> " + (p.to || "?") + ": " + (p.text || ""));
+      } else if (item.type === "error") {
+        addLog("[ERR] " + (p.error || "unknown error"));
+      } else if (item.type === "event") {
+        addLog("[EVT] " + (p.event || "event") + (p.text ? (": " + p.text) : ""));
+      } else if (item.type === "status") {
+        addLog("[SYS] " + (p.text || ""));
+      } else {
+        addLog("[" + item.type + "] " + JSON.stringify(p));
+      }
+    }
+
+    async function pollEvents() {
+      try {
+        var data = await api("/api/events?since=" + lastId);
+        var arr = data.events || [];
+        for (var i = 0; i < arr.length; i++) {
+          renderEvent(arr[i]);
+        }
+        if (typeof data.last_id === "number") {
+          lastId = data.last_id;
+        }
+      } catch (e) {
+        addLog("[ERR] poll: " + e.message);
+      }
+    }
+
+    setInterval(pollEvents, 900);
+    addLog("UI loaded");
+  </script>
+</body>
+</html>
