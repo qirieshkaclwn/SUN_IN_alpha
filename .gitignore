@@ -1,0 +1,56 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Тестирование и покрытие
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+
+# Локальные ключи и сертификаты (Безопасность!)
+# Не игнорируем системные private_ca.crt/key, если они нужны для работы сервера "из коробки"
+# Но игнорируем персональные ключи пользователей
+client/*.crt
+client/*.key
+!client/private_ca.crt
+web_gateway/identities/*.crt
+web_gateway/identities/*.key
+!web_gateway/identities/private_ca.crt
+
+# Окружение PyCharm / IDE
+.idea/
+*.swp
+*.swo
+
+# Локальные настройки и секреты
+.env
+.venv
+venv/
+ENV/
+
+# Логи
+*.log

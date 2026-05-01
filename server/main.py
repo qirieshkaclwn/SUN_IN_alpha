@@ -464,14 +464,16 @@ class ChatServer:
         logger.debug(f"Broadcast: {packet.msg_type} (исключая {exclude.nickname if exclude else 'никого'})")
         disconnected = []
         
-        for client in self.clients:
+        # Используем list(self.clients) для итерации по копии, 
+        # чтобы избежать RuntimeError, если список изменится во время цикла.
+        for client in list(self.clients):
             if client == exclude:
                 continue
             
             try:
                 client.send_packet(packet)
             except Exception as e:
-                logger.error(f"Ошибка отправки клиенту {client.nickname}: {e}")
+                logger.error(f"Ошибка отправки клиенту {client.nickname if hasattr(client, 'nickname') else 'unknown'}: {e}")
                 disconnected.append(client)
         
         # Удаляем отключенных клиентов
