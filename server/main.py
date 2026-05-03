@@ -5,6 +5,8 @@ import struct
 import logging
 import base64
 import os
+
+from dotenv import load_dotenv
 from typing import Optional, Dict, Any
 from datetime import datetime, timezone, timedelta
 
@@ -12,6 +14,8 @@ from cryptography import x509
 from cryptography.x509.oid import NameOID
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding, rsa, ec, ed25519, ed448
+import psycopg2
+from psycopg2 import sql
 
 # Настройка логирования
 logging.basicConfig(
@@ -19,6 +23,8 @@ logging.basicConfig(
     format='%(asctime)s [%(levelname)s] [%(name)s] %(message)s',
     datefmt='%H:%M:%S'
 )
+
+load_dotenv()
 
 logger = logging.getLogger('ChatServer')
 
@@ -179,6 +185,12 @@ class ClientHandler:
             try:
                 # Проверяем, что сертификат подписан нашим CA и CN совпадает с ником.
                 cert = self.server.validate_client_certificate(packet.client_cert, packet.nickname)
+
+                # Дополнительная проверка по БД: предъявленный сертификат должен совпадать с тем, что был выдан ранее
+                stored_cert = self.server._get_cert_from_db(packet.nickname)
+                if stored_cert and stored_cert.strip() != packet.client_cert.strip():
+                    self.send_packet(Packet('error', error="Предъявленный сертификат не совпадает с зарегистрированным для этого никнейма"))
+                    return
             except Exception as e:
                 self.send_packet(Packet('error', error=f"Сертификат отклонен: {e}"))
                 return
@@ -327,6 +339,17 @@ class ChatServer:
         self.host = host
         self.port = port
         self.clients = set()
+
+        # Параметры подключения к БД PostgreSQL
+        self.db_host = os.getenv('DB_HOST', 'localhost')
+        self.db_port = os.getenv('DB_PORT', '5432')
+        self.db_name = os.getenv('DB_NAME', 'chat_db')
+        self.db_user = os.getenv('DB_USER', 'postgres')
+        self.db_password = os.getenv('DB_PASSWORD', 'password')
+
+        # Инициализация БД
+        self._init_db()
+
         base_dir = os.path.dirname(os.path.abspath(__file__))
         ca_path = os.path.join(base_dir, 'private_ca.crt')
         ca_key_path = os.path.join(base_dir, 'private_ca.key')
@@ -345,7 +368,73 @@ class ChatServer:
         if client in self.clients:
             self.clients.remove(client)
             logger.debug(f"Клиент удален. Всего онлайн: {len(self.clients)}")
-    
+
+    def _init_db(self):
+        """Создание таблицы сертификатов"""
+        try:
+            conn = psycopg2.connect(
+                host=self.db_host,
+                port=self.db_port,
+                database=self.db_name,
+                user=self.db_user,
+                password=self.db_password
+            )
+            with conn.cursor() as cur:
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS certificates (
+                        nickname VARCHAR(255) PRIMARY KEY,
+                        cert_pem TEXT NOT NULL,
+                        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+            conn.commit()
+            conn.close()
+            logger.info("База данных PostgreSQL инициализирована.")
+        except Exception as e:
+            logger.error(f"Ошибка инициализации БД: {e}")
+
+    def _get_cert_from_db(self, nickname: str) -> Optional[str]:
+        """Получение PEM-сертификата из БД по никнейму"""
+        try:
+            conn = psycopg2.connect(
+                host=self.db_host,
+                port=self.db_port,
+                database=self.db_name,
+                user=self.db_user,
+                password=self.db_password
+            )
+            with conn.cursor() as cur:
+                cur.execute("SELECT cert_pem FROM certificates WHERE nickname = %s", (nickname,))
+                row = cur.fetchone()
+                return row[0] if row else None
+        except Exception as e:
+            logger.error(f"Ошибка чтения из БД: {e}")
+            return None
+        finally:
+            if 'conn' in locals() and conn:
+                conn.close()
+
+    def _save_cert_to_db(self, nickname: str, cert_pem: str):
+        """Сохранение сертификата в БД"""
+        try:
+            conn = psycopg2.connect(
+                host=self.db_host,
+                port=self.db_port,
+                database=self.db_name,
+                user=self.db_user,
+                password=self.db_password
+            )
+            with conn.cursor() as cur:
+                cur.execute(
+                    "INSERT INTO certificates (nickname, cert_pem) VALUES (%s, %s)",
+                    (nickname, cert_pem)
+                )
+            conn.commit()
+            conn.close()
+        except Exception as e:
+            logger.error(f"Ошибка записи в БД: {e}")
+            raise
+
     def get_online_users(self) -> list:
         """Возвращает список никнеймов онлайн пользователей"""
         return [client.get_nickname() for client in self.clients if client.get_nickname()]
@@ -370,6 +459,12 @@ class ChatServer:
         return cert
 
     def issue_client_certificate(self, nickname: str, csr_pem: str) -> str:
+        # Проверяем, не был ли уже выдан сертификат для этого никнейма
+        existing_cert = self._get_cert_from_db(nickname)
+        if existing_cert:
+            logger.warning(f"Попытка повторного выпуска сертификата для {nickname}")
+            raise ValueError(f"Сертификат для никнейма {nickname} уже был выдан ранее")
+
         csr = x509.load_pem_x509_csr(csr_pem.encode('utf-8'))
         # Ник закреплен в CN, чтобы сервер и клиенты проверяли привязку identity -> cert.
         self._verify_nickname_in_cert(csr, nickname)
@@ -386,7 +481,12 @@ class ChatServer:
             .add_extension(x509.BasicConstraints(ca=False, path_length=None), critical=True)
         )
         cert = cert_builder.sign(private_key=self.ca_private_key, algorithm=hashes.SHA256())
-        return cert.public_bytes(serialization.Encoding.PEM).decode('utf-8')
+        cert_pem = cert.public_bytes(serialization.Encoding.PEM).decode('utf-8')
+
+        # Сохраняем информацию о выданном сертификате в БД
+        self._save_cert_to_db(nickname, cert_pem)
+
+        return cert_pem
 
     def _verify_cert_signed_by_ca(self, cert: x509.Certificate):
         # Разрешаем только сертификаты, подписанные нашим private CA.
