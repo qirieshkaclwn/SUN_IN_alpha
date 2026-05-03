@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 import threading
 from pathlib import Path
 from typing import Any, Dict, List
@@ -27,6 +28,15 @@ class ConnectRequest(BaseModel):
 class SendRequest(BaseModel):
     to: str = Field(min_length=1)
     text: str = Field(min_length=1)
+
+
+class ExportRequest(BaseModel):
+    password: str = Field(min_length=1)
+
+
+class ImportRequest(BaseModel):
+    nickname: str = Field(min_length=1)
+    password: str = Field(min_length=1)
 
 
 class GatewayState:
@@ -83,6 +93,16 @@ def connect(data: ConnectRequest):
     state.clear()
 
     client = ChatClientCore(host=data.host, port=data.port, on_event=_on_client_event)
+
+    # Пробуем загрузить identity из файлов (мог быть импорт через /api/import_crt)
+    cert_path = os.path.join(client.identities_dir, f"{data.nickname}.crt")
+    key_path = os.path.join(client.identities_dir, f"{data.nickname}.key")
+    if os.path.exists(cert_path) and os.path.exists(key_path):
+        try:
+            client._load_identity_for_nickname(data.nickname)
+        except Exception:
+            client = ChatClientCore(host=data.host, port=data.port, on_event=_on_client_event)
+
     if not client.connect():
         raise HTTPException(status_code=400, detail="Не удалось подключиться к TCP-серверу")
     if not client.authenticate(data.nickname):
@@ -116,6 +136,25 @@ def disconnect():
     if client:
         client.disconnect()
     state.push_event("status", {"text": "Отключено"})
+    return {"ok": True}
+
+
+@app.post("/api/export_crt")
+def export_crt(data: ExportRequest):
+    with state.lock:
+        client = state.client
+    if not client or not client.authenticated:
+        raise HTTPException(status_code=400, detail="Клиент не авторизован")
+    client._export_crt(client.nickname, data.password)
+    return {"ok": True}
+
+
+@app.post("/api/import_crt")
+def import_crt(data: ImportRequest):
+    client = ChatClientCore(host="127.0.0.1", port=8888, on_event=_on_client_event)
+    ok = client._import_crt(data.password, data.nickname)
+    if not ok:
+        raise HTTPException(status_code=400, detail="Ошибка импорта сертификата")
     return {"ok": True}
 
 

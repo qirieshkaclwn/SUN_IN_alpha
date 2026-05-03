@@ -82,6 +82,9 @@ class Packet:
         return f"Packet(type={self.msg_type}, from={self.from_user}, to={self.to_user})"
 
 
+
+
+
 class ChatClient:
     """Клиент чата с поддержкой многопоточности"""
 
@@ -100,6 +103,7 @@ class ChatClient:
         self.enroll_nickname = None
         self.listener_thread = None
         self.private_key = None
+        self.imported_cert = False
         self.client_cert_pem = None
         self.ca_cert = self._load_ca_certificate()
         self.peer_public_keys: Dict[str, Any] = {}
@@ -269,6 +273,103 @@ class ChatClient:
             except (ConnectionResetError, OSError):
                 return None
         return bytes(data)
+
+    def _export_crt(self, nickname: str, password: str):
+        """Экспорт сертификата и ключа в зашифрованном виде.
+
+        Ключ шифрования: SHA-256 от пароля (32 байта).
+        Шифрование: AES-GCM (случайный nonce, auth tag).
+        Формат файла: nonce (12 байт) || cert_len (4 байта) || cert_bytes || key_bytes
+        Всё кодируется в base64 при записи.
+        """
+        if not self.client_cert_pem:
+            print("✗ Нет сертификата для экспорта. Сначала зарегистрируйтесь.")
+            return
+        if not self.private_key:
+            print("✗ Нет приватного ключа для экспорта.")
+            return
+
+        cert_pem = self.client_cert_pem.encode('utf-8')
+        key_pem = self.private_key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.PKCS8,
+            encryption_algorithm=serialization.NoEncryption(),
+        )
+
+        # Ключ из пароля: SHA-256
+        key_bytes = hashes.Hash(hashes.SHA256())
+        key_bytes.update(password.encode('utf-8'))
+        encryption_key = key_bytes.finalize()  # 32 байта
+
+        nonce = os.urandom(12)  # 96-битный nonce для AES-GCM
+        aesgcm = AESGCM(encryption_key)
+        cert_len = struct.pack('!I', len(cert_pem))
+        plaintext = cert_len + cert_pem + key_pem
+        ciphertext = aesgcm.encrypt(nonce, plaintext, None)
+
+        output_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), f"{nickname}.enc")
+        with open(output_path, 'wb') as f:
+            f.write(base64.b64encode(nonce + ciphertext))
+        print(f"✓ Сертификат и ключ экспортированы в {output_path}")
+
+    def _import_crt(self, password: str, nickname: Optional[str] = None) -> bool:
+        """Импорт сертификата и ключа из зашифрованного файла.
+
+        Пароль -> SHA-256 -> ключ AES-GCM.
+        Формат файла: base64(nonce (12 байт) || ciphertext)
+        Расшифрованные данные: cert_len (4 байта) || cert_pem || key_pem
+        nickname — если передан, читает файл для этого никнейма (до подключения).
+        """
+        target = nickname or self.nickname
+        if not target:
+            print("✗ Неизвестен никнейм — сначала авторизуйтесь")
+            return False
+
+        enc_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), f"{target}.enc")
+        if not os.path.exists(enc_path):
+            print(f"✗ Файл {enc_path} не найден")
+            return False
+
+        try:
+            with open(enc_path, 'rb') as f:
+                raw = base64.b64decode(f.read())
+
+            key_hash = hashes.Hash(hashes.SHA256())
+            key_hash.update(password.encode('utf-8'))
+            encryption_key = key_hash.finalize()
+
+            nonce = raw[:12]
+            ciphertext = raw[12:]
+            plaintext = AESGCM(encryption_key).decrypt(nonce, ciphertext, None)
+
+            cert_len = struct.unpack('!I', plaintext[:4])[0]
+            cert_pem = plaintext[4:4 + cert_len]
+            key_pem = plaintext[4 + cert_len:]
+
+            # Валидация сертификата
+            cert = x509.load_pem_x509_certificate(cert_pem)
+            self._verify_cert_signed_by_ca(cert)
+            self._verify_cert_validity(cert)
+            self._verify_nickname_in_cert(cert, target)
+
+            # Сохраняем как обычные файлы
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            cert_path = os.path.join(base_dir, f"{target}.crt")
+            key_path = os.path.join(base_dir, f"{target}.key")
+            with open(cert_path, 'wb') as f:
+                f.write(cert_pem)
+            with open(key_path, 'wb') as f:
+                f.write(key_pem)
+
+            self.client_cert_pem = cert_pem.decode('utf-8')
+            key_obj = serialization.load_pem_private_key(key_pem, password=None)
+            self.private_key = key_obj
+            self.imported_cert = True
+            print(f"✓ Сертификат и ключ восстановлены из {enc_path}")
+            return True
+        except Exception as e:
+            print(f"✗ Ошибка импорта: {e}")
+            return False
 
     def connect(self) -> bool:
         """Подключение к серверу"""
@@ -479,15 +580,43 @@ class ChatClient:
             self.auth_error = f"Не удалось загрузить сертификат клиента: {e}"
             return False
 
-        self.pending_nickname = nickname
-        self.authenticated = False
-        self.auth_error = None
-        self.auth_result_event.clear()
-        packet = Packet('auth_init', nickname=nickname, client_cert=self.client_cert_pem)
-        if not self.send_packet(packet):
+        # Цикл: если импортированный сертификат отклонён — перевыпускаем и ретраим.
+        while True:
+            self.pending_nickname = nickname
+            self.authenticated = False
+            self.auth_error = None
+            self.auth_result_event.clear()
+            packet = Packet('auth_init', nickname=nickname, client_cert=self.client_cert_pem)
+            if not self.send_packet(packet):
+                return False
+            self.auth_result_event.wait(timeout=5)
+            if self.authenticated:
+                return True
+            # Если ошибка "уже используется" и сертификат был импортирован — перевыпускаем.
+            if (self.imported_cert
+                    and self.auth_error
+                    and 'already' in self.auth_error.lower()):
+                print(f"Сертификат для {nickname} уже недействителен — перевыпускаю...")
+                self.private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+                csr_pem = self._build_csr_for_nickname(nickname)
+                self.enroll_nickname = nickname
+                self.enroll_error = None
+                self.enroll_result_event.clear()
+                if not self.send_packet(Packet('cert_enroll', nickname=nickname, csr=csr_pem)):
+                    self.auth_error = "Ошибка отправки cert_enroll"
+                    self.enroll_nickname = None
+                    return False
+                self.enroll_result_event.wait(timeout=5)
+                self.enroll_nickname = None
+                if self.enroll_error:
+                    self.auth_error = f"Не удалось перевыпустить сертификат: {self.enroll_error}"
+                    return False
+                if not self.client_cert_pem:
+                    self.auth_error = "Сервер не вернул сертификат"
+                    return False
+                self.imported_cert = False  # теперь новый сертификат, ретраить не нужно
+                continue
             return False
-        self.auth_result_event.wait(timeout=5)
-        return self.authenticated
 
     def send_message(self, text: str, to_user: Optional[str] = None):
         """Отправка приватного сообщения"""
@@ -586,17 +715,77 @@ class ChatClient:
         print("=" * 50)
         print("      Добро пожаловать в чат!")
         print("=" * 50)
-        
-        # Подключение к серверу
-        if not self.connect():
-            print("Не удалось подключиться к серверу. Завершение работы.")
-            return
 
-        # Авторизация
         nickname = input("\nВведите ваш никнейм: ").strip()
         if not nickname:
             print("Никнейм не может быть пустым!")
-            self.disconnect()
+            return
+
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        enc_path = os.path.join(base_dir, f"{nickname}.enc")
+        crt_path = os.path.join(base_dir, f"{nickname}.crt")
+        key_path = os.path.join(base_dir, f"{nickname}.key")
+
+        has_enc = os.path.exists(enc_path)
+        has_crt = os.path.exists(crt_path) and os.path.exists(key_path)
+
+        if has_enc and has_crt:
+            choice = input(
+                f"\n Для '{nickname}' найдены файлы identity и backup.\n"
+                f"  (N)ew — новый сертификат (старый станет недействителен)\n"
+                f"  (I)mport — восстановить из backup .enc файла\n"
+                f"  (C)onnect — подключиться с текущими .crt/.key\n"
+                f"Выбор (N/I/C): "
+            ).strip().lower()
+        elif has_enc:
+            choice = input(
+                f"\n Для '{nickname}' найден backup .enc файл.\n"
+                f"  (N)ew — новый сертификат\n"
+                f"  (I)mport — восстановить из backup .enc\n"
+                f"  (C)onnect — отмена\n"
+                f"Выбор (N/I/C): "
+            ).strip().lower()
+        elif has_crt:
+            choice = input(
+                f"\n Для '{nickname}' найдены .crt/.key файлы.\n"
+                f"  (N)ew — новый сертификат (старый станет недействителен)\n"
+                f"  (C)onnect — подключиться с текущими\n"
+                f"Выбор (N/C): "
+            ).strip().lower()
+        else:
+            choice = 'n'
+
+        if choice == 'i':
+            if not has_enc:
+                print("✗ Backup файл не найден.")
+                return
+            password = input("Введите пароль backup: ").strip()
+            if not password:
+                print("✗ Пароль не может быть пустым.")
+                return
+            self.nickname = nickname
+            if not self._import_crt(password, nickname):
+                return
+        elif choice == 'c':
+            if not has_crt:
+                print("✗ Файлы .crt/.key не найдены.")
+                return
+            self.nickname = nickname
+            try:
+                self._load_identity_for_nickname(nickname)
+            except Exception as e:
+                print(f"✗ Не удалось загрузить identity: {e}")
+                return
+        elif choice in ('n', ''):
+            self.nickname = nickname
+            self.imported_cert = False
+        else:
+            print("✗ Неизвестный выбор.")
+            return
+
+        # Подключение к серверу
+        if not self.connect():
+            print("Не удалось подключиться к серверу.")
             return
 
         if not self.authenticate(nickname):
@@ -612,6 +801,8 @@ class ChatClient:
         print("  /quit - выход из чата")
         print("  /help - справка")
         print("  /list - список пользователей онлайн")
+        print("  /export_crt - экспорт сертификата")
+        print("  /import_crt - импорт сертификата")
         print("-" * 50)
 
         try:
@@ -629,12 +820,20 @@ class ChatClient:
                     print("  /quit - выход")
                     print("  /help - эта справка")
                     print("  /list - список пользователей онлайн")
+                    print("  /export_crt - экспорт сертификата")
+                    print("  /import_crt - импорт сертификата")
                     print("Отправка сообщений:")
                     print("  @nickname сообщение - сообщение пользователю")
                     continue
                 elif message == '/list':
                     print("Используйте @nickname для отправки сообщения")
                     continue
+                elif message == '/export_crt':
+                    password = input(" Введите пароль для шифрования сертификата: ")
+                    self._export_crt(nickname=self.nickname, password=password)
+                elif message == '/import_crt':
+                    password = input(" Введите пароль для расшифровки сертификата: ")
+                    self._import_crt(password=password)
                 else:
                     # Парсим сообщение - теперь обязательно должен быть @nickname
                     text, recipient = self.parse_message(message)

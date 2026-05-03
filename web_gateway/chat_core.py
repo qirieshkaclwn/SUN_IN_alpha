@@ -105,6 +105,7 @@ class ChatClientCore:
         self.listener_thread: Optional[threading.Thread] = None
         self.private_key = None
         self.client_cert_pem: Optional[str] = None
+        self.imported_cert = False
         self.peer_public_keys: Dict[str, Any] = {}
         self.pending_messages: Dict[str, list[str]] = {}
         self.keys_lock = threading.Lock()
@@ -436,14 +437,41 @@ class ChatClientCore:
             self.auth_error = f"Не удалось загрузить сертификат клиента: {exc}"
             return False
 
-        self.pending_nickname = nickname
-        self.authenticated = False
-        self.auth_error = None
-        self.auth_result_event.clear()
-        if not self.send_packet(Packet("auth_init", nickname=nickname, client_cert=self.client_cert_pem)):
+        # Цикл: если импортированный сертификат отклонён — перевыпускаем и ретраим.
+        while True:
+            self.pending_nickname = nickname
+            self.authenticated = False
+            self.auth_error = None
+            self.auth_result_event.clear()
+            if not self.send_packet(Packet("auth_init", nickname=nickname, client_cert=self.client_cert_pem)):
+                return False
+            self.auth_result_event.wait(timeout=timeout_seconds)
+            if self.authenticated:
+                return True
+            if (self.imported_cert
+                    and self.auth_error
+                    and "already" in self.auth_error.lower()):
+                self._emit("status", text=f"Сертификат для {nickname} уже недействителен — перевыпускаю...")
+                self.private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+                csr_pem = self._build_csr_for_nickname(nickname)
+                self.enroll_nickname = nickname
+                self.enroll_error = None
+                self.enroll_result_event.clear()
+                if not self.send_packet(Packet("cert_enroll", nickname=nickname, csr=csr_pem)):
+                    self.auth_error = "Ошибка отправки cert_enroll"
+                    self.enroll_nickname = None
+                    return False
+                self.enroll_result_event.wait(timeout=timeout_seconds)
+                self.enroll_nickname = None
+                if self.enroll_error:
+                    self.auth_error = f"Не удалось перевыпустить сертификат: {self.enroll_error}"
+                    return False
+                if not self.client_cert_pem:
+                    self.auth_error = "Сервер не вернул сертификат"
+                    return False
+                self.imported_cert = False
+                continue
             return False
-        self.auth_result_event.wait(timeout=timeout_seconds)
-        return self.authenticated
 
     def request_peer_key(self, nickname: str) -> bool:
         return self.send_packet(Packet("key_request", to=nickname))
@@ -466,6 +494,101 @@ class ChatClientCore:
             self._emit("error", error=f"Ошибка шифрования: {exc}")
             return False
         return self.send_packet(Packet("message", to=to_user, text=encrypted_text, enc_key=enc_key, nonce=nonce))
+
+    def _export_crt(self, nickname: str, password: str):
+        """Экспорт сертификата и ключа в зашифрованном виде.
+
+        Ключ шифрования: SHA-256 от пароля (32 байта).
+        Шифрование: AES-GCM (случайный nonce, auth tag).
+        Формат файла: nonce (12 байт) || cert_len (4 байта) || cert_bytes || key_bytes
+        Всё кодируется в base64 при записи.
+        """
+        if not self.client_cert_pem:
+            self._emit("error", error="Нет сертификата для экспорта. Сначала зарегистрируйтесь.")
+            return
+        if not self.private_key:
+            self._emit("error", error="Нет приватного ключа для экспорта.")
+            return
+
+        cert_pem = self.client_cert_pem.encode("utf-8")
+        key_pem = self.private_key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.PKCS8,
+            encryption_algorithm=serialization.NoEncryption(),
+        )
+
+        # Ключ из пароля: SHA-256
+        key_hash = hashes.Hash(hashes.SHA256())
+        key_hash.update(password.encode("utf-8"))
+        encryption_key = key_hash.finalize()  # 32 байта
+
+        nonce = os.urandom(12)  # 96-битный nonce для AES-GCM
+        aesgcm = AESGCM(encryption_key)
+        cert_len = struct.pack("!I", len(cert_pem))
+        plaintext = cert_len + cert_pem + key_pem
+        ciphertext = aesgcm.encrypt(nonce, plaintext, None)
+
+        output_path = os.path.join(self.identities_dir, f"{nickname}.enc")
+        with open(output_path, "wb") as f:
+            f.write(base64.b64encode(nonce + ciphertext))
+        self._emit("status", text=f"Сертификат и ключ экспортированы в {output_path}")
+
+    def _import_crt(self, password: str, nickname: Optional[str] = None) -> bool:
+        """Импорт сертификата и ключа из зашифрованного файла.
+
+        Пароль -> SHA-256 -> ключ AES-GCM.
+        Формат файла: base64(nonce (12 байт) || ciphertext)
+        Расшифрованные данные: cert_len (4 байта) || cert_pem || key_pem
+        nickname — если передан, читает файл для этого никнейма (до подключения).
+        """
+        target = nickname or self.nickname
+        if not target:
+            self._emit("error", error="Неизвестен никнейм — сначала укажите его")
+            return False
+
+        enc_path = os.path.join(self.identities_dir, f"{target}.enc")
+        if not os.path.exists(enc_path):
+            self._emit("error", error=f"Файл {enc_path} не найден")
+            return False
+
+        try:
+            with open(enc_path, "rb") as f:
+                raw = base64.b64decode(f.read())
+
+            key_hash = hashes.Hash(hashes.SHA256())
+            key_hash.update(password.encode("utf-8"))
+            encryption_key = key_hash.finalize()
+
+            nonce = raw[:12]
+            ciphertext = raw[12:]
+            plaintext = AESGCM(encryption_key).decrypt(nonce, ciphertext, None)
+
+            cert_len = struct.unpack("!I", plaintext[:4])[0]
+            cert_pem = plaintext[4:4 + cert_len]
+            key_pem = plaintext[4 + cert_len:]
+
+            # Валидация сертификата
+            cert = x509.load_pem_x509_certificate(cert_pem)
+            self._verify_cert_signed_by_ca(cert)
+            self._verify_cert_validity(cert)
+            self._verify_nickname_in_cert(cert, target)
+
+            # Сохраняем как обычные файлы
+            cert_path, key_path = self._identity_paths(target)
+            with open(cert_path, "wb") as f:
+                f.write(cert_pem)
+            with open(key_path, "wb") as f:
+                f.write(key_pem)
+
+            self.client_cert_pem = cert_pem.decode("utf-8")
+            key_obj = serialization.load_pem_private_key(key_pem, password=None)
+            self.private_key = key_obj
+            self.imported_cert = True
+            self._emit("status", text=f"Сертификат и ключ восстановлены из {enc_path}")
+            return True
+        except Exception as exc:
+            self._emit("error", error=f"Ошибка импорта: {exc}")
+            return False
 
     def disconnect(self, emit: bool = True):
         if self.connected:

@@ -20,7 +20,7 @@
       text-decoration: underline;
     }
     .page {
-      width: 940px;
+      width: 1280px;
       margin: 0 auto;
       padding: 22px 0;
     }
@@ -97,7 +97,7 @@
       font-weight: 700;
       text-align: right;
     }
-    input[type="text"], input[type="number"] {
+    input[type="text"], input[type="number"], input[type="password"] {
       width: 100%;
       box-sizing: border-box;
       border: 1px solid #7a7a7a;
@@ -182,6 +182,13 @@
             <button onclick="sendMsg()">Send</button>
           </div>
 
+          <div class="form-row" style="margin-top:4px;">
+            <div class="label">Cert</div>
+            <input id="cert_password" type="password" placeholder="пароль для экспорта/импорта" style="flex:1;" />
+            <button onclick="exportCrt()">Export</button>
+            <button onclick="importCrt()">Import</button>
+          </div>
+
           <div class="help">Только приватные сообщения: укажи получателя в поле <b>To</b>.</div>
           <div id="log"></div>
         </main>
@@ -189,7 +196,7 @@
 
       <div class="footer">
         Best viewed in Internet Explorer 6.0<br />
-        800x600 resolutionn
+        1280x1024 resolution
       </div>
     </div>
   </div>
@@ -251,6 +258,39 @@
         }
         await api("/api/send", "POST", { to: to, text: text });
         document.getElementById("text").value = "";
+      } catch (e) {
+        addLog("[ERR] " + e.message);
+      }
+    }
+
+    async function exportCrt() {
+      var password = document.getElementById("cert_password").value;
+      if (!password) {
+        addLog("[ERR] Введите пароль для экспорта");
+        return;
+      }
+      try {
+        await api("/api/export_crt", "POST", { password: password });
+        addLog("[OK] Сертификат экспортирован");
+      } catch (e) {
+        addLog("[ERR] " + e.message);
+      }
+    }
+
+    async function importCrt() {
+      var nickname = document.getElementById("nickname").value.trim();
+      var password = document.getElementById("cert_password").value;
+      if (!nickname) {
+        addLog("[ERR] Укажите nickname перед импортом");
+        return;
+      }
+      if (!password) {
+        addLog("[ERR] Введите пароль для импорта");
+        return;
+      }
+      try {
+        await api("/api/import_crt", "POST", { nickname: nickname, password: password });
+        addLog("[OK] Сертификат импортирован. Теперь нажмите Connect.");
       } catch (e) {
         addLog("[ERR] " + e.message);
       }

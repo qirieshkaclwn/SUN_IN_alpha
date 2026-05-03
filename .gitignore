@@ -47,7 +47,7 @@ web_gateway/identities/*.key
 *.swo
 
 # Локальные настройки и секреты
-.env
+server/.env
 .venv
 venv/
 ENV/
