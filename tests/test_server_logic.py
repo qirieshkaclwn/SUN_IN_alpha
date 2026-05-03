@@ -4,12 +4,18 @@ from cryptography.hazmat.primitives.asymmetric import rsa, padding
 from cryptography import x509
 from cryptography.x509.oid import NameOID
 from cryptography.hazmat.primitives import hashes, serialization
+from unittest.mock import MagicMock
 from server.main import ChatServer, Packet
 
 @pytest.fixture
 def server():
     # ChatServer ожидает наличие private_ca.crt и private_ca.key в своей директории
-    return ChatServer()
+    s = ChatServer()
+    # Мокаем методы работы с БД для тестов
+    s._init_db = MagicMock()
+    s._get_cert_from_db = MagicMock(return_value=None)
+    s._save_cert_to_db = MagicMock()
+    return s
 
 def generate_key_and_csr(nickname):
     """Вспомогательная функция для генерации приватного ключа и CSR"""
@@ -84,3 +90,14 @@ def test_server_client_management(server):
     # Удаление клиента из списка
     server.remove_client(client_alice)
     assert len(server.clients) == 0
+
+def test_server_prevent_duplicate_cert(server):
+    """Проверка запрета на повторный выпуск сертификата для того же никнейма"""
+    nickname = "alice"
+    key, csr_pem = generate_key_and_csr(nickname)
+    
+    # Имитируем, что сертификат уже есть в БД
+    server._get_cert_from_db = MagicMock(return_value="EXISTING_CERT_PEM")
+    
+    with pytest.raises(ValueError, match="уже был выдан ранее"):
+        server.issue_client_certificate(nickname, csr_pem)

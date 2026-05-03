@@ -54,3 +54,4 @@ ENV/
 
 # Логи
 *.log
+/client/q2.enc
