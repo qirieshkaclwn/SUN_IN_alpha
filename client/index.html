@@ -2,560 +2,494 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SUN_IN Web Client</title>
+    <title>SUN_IN Messenger — Рабочая станция</title>
     <style>
-        :root {
-            --bg-primary: #0f172a;
-            --bg-secondary: #1e293b;
-            --text-primary: #f8fafc;
-            --text-secondary: #94a3b8;
-            --accent: #38bdf8;
-            --accent-hover: #0284c7;
-            --border: #334155;
-            --success: #22c55e;
-            --danger: #ef4444;
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-        }
-
         body {
-            background-color: var(--bg-primary);
-            color: var(--text-primary);
+            background-color: #008080;
+            font-family: 'MS Sans Serif', Tahoma, 'Segoe UI', sans-serif;
+            font-size: 11px;
+            color: #000000;
+            margin: 0;
+            padding: 15px;
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
-            padding: 20px;
+            min-height: 92vh;
         }
-
-        .chat-container {
-            width: 100%;
-            max-width: 1000px;
-            height: 90vh;
-            background-color: var(--bg-secondary);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+        .window {
+            background-color: #c0c0c0;
+            border-top: 2px solid #ffffff;
+            border-left: 2px solid #ffffff;
+            border-right: 2px solid #000000;
+            border-bottom: 2px solid #000000;
+            box-shadow: 1px 1px 0 #000000;
+            width: 820px;
+            padding: 3px;
         }
-
-        .main-layout {
-            flex: 1;
-            display: flex;
-            overflow: hidden;
-        }
-
-        .sidebar {
-            width: 250px;
-            background-color: rgba(15, 23, 42, 0.5);
-            border-right: 1px solid var(--border);
-            display: flex;
-            flex-direction: column;
-        }
-
-        .sidebar-header {
-            padding: 12px 16px;
-            font-size: 0.8rem;
-            font-weight: 700;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            border-bottom: 1px solid var(--border);
+        .title-bar {
+            background: #000080;
+            color: #ffffff;
+            font-weight: bold;
+            padding: 3px 5px;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
-
-        .chat-list {
-            flex: 1;
-            overflow-y: auto;
-            list-style: none;
+        .title-btn {
+            background: #c0c0c0;
+            border-top: 1px solid #ffffff;
+            border-left: 1px solid #ffffff;
+            border-right: 1px solid #000000;
+            border-bottom: 1px solid #000000;
+            font-size: 9px;
+            font-weight: bold;
+            width: 16px;
+            height: 14px;
+            line-height: 12px;
+            text-align: center;
+            cursor: default;
         }
-
-        .chat-item {
-            padding: 10px 16px;
-            cursor: pointer;
-            border-bottom: 1px solid rgba(51, 65, 85, 0.3);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 0.9rem;
-            transition: background 0.15s;
+        .menu-bar {
+            background: #c0c0c0;
+            border-bottom: 1px solid #808080;
+            padding: 2px 4px;
+            margin-bottom: 4px;
         }
-
-        .chat-item:hover {
-            background-color: rgba(56, 189, 248, 0.1);
-        }
-
-        .chat-item.active {
-            background-color: rgba(56, 189, 248, 0.2);
-            border-left: 3px solid var(--accent);
-            font-weight: 600;
-        }
-
-        .chat-badge {
-            font-size: 0.75rem;
-            background: var(--border);
+        .menu-item {
+            display: inline-block;
             padding: 2px 6px;
-            border-radius: 10px;
-            color: var(--text-secondary);
+            cursor: default;
         }
-
-        .chat-view {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
+        .menu-item:hover {
+            background: #000080;
+            color: #ffffff;
         }
-
-        .chat-view-header {
-            padding: 12px 20px;
-            background-color: rgba(15, 23, 42, 0.3);
-            border-bottom: 1px solid var(--border);
-            font-weight: 600;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        fieldset {
+            border-top: 2px solid #808080;
+            border-left: 2px solid #808080;
+            border-right: 2px solid #ffffff;
+            border-bottom: 2px solid #ffffff;
+            padding: 6px;
+            margin: 0;
+            box-sizing: border-box;
         }
-
-        .header {
-            padding: 16px 20px;
-            background-color: rgba(15, 23, 42, 0.6);
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        legend {
+            font-weight: bold;
+            padding: 0 4px;
         }
-
-        .header h1 {
-            font-size: 1.25rem;
-            font-weight: 600;
-            color: var(--accent);
-        }
-
-        .status-badge {
-            font-size: 0.85rem;
-            padding: 4px 10px;
-            border-radius: 9999px;
-            background-color: var(--border);
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background-color: var(--danger);
-        }
-
-        .status-dot.connected {
-            background-color: var(--success);
-        }
-
-        .connection-bar {
-            padding: 12px 20px;
-            background-color: rgba(15, 23, 42, 0.3);
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            gap: 10px;
-        }
-
         input[type="text"] {
-            background-color: var(--bg-primary);
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            color: var(--text-primary);
-            padding: 8px 12px;
-            font-size: 0.9rem;
-            outline: none;
-            transition: border-color 0.2s;
+            border-top: 2px solid #808080;
+            border-left: 2px solid #808080;
+            border-right: 2px solid #ffffff;
+            border-bottom: 2px solid #ffffff;
+            background: #ffffff;
+            font-family: 'MS Sans Serif', Tahoma, 'Segoe UI', sans-serif;
+            font-size: 11px;
+            padding: 3px 5px;
+            box-sizing: border-box;
         }
-
-        input[type="text"]:focus {
-            border-color: var(--accent);
+        input[type="text"]:disabled {
+            background: #e0e0e0;
+            color: #808080;
         }
-
         button {
-            background-color: var(--accent);
-            color: var(--bg-primary);
-            font-weight: 600;
-            border: none;
-            border-radius: 6px;
-            padding: 8px 16px;
+            background: #c0c0c0;
+            border-top: 2px solid #ffffff;
+            border-left: 2px solid #ffffff;
+            border-right: 2px solid #000000;
+            border-bottom: 2px solid #000000;
+            font-family: 'MS Sans Serif', Tahoma, 'Segoe UI', sans-serif;
+            font-size: 11px;
+            padding: 3px 10px;
             cursor: pointer;
-            transition: background-color 0.2s;
         }
-
-        button:hover {
-            background-color: var(--accent-hover);
+        button:active {
+            border-top: 2px solid #000000;
+            border-left: 2px solid #000000;
+            border-right: 2px solid #ffffff;
+            border-bottom: 2px solid #ffffff;
+            padding: 4px 9px 2px 11px;
         }
-
         button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
+            color: #808080;
+            cursor: default;
         }
-
-        .messages-area {
-            flex: 1;
-            padding: 20px;
-            overflow-y: auto;
+        .inset-panel {
+            background: #ffffff;
+            border-top: 2px solid #808080;
+            border-left: 2px solid #808080;
+            border-right: 2px solid #ffffff;
+            border-bottom: 2px solid #ffffff;
+            box-sizing: border-box;
+        }
+        .contact-row {
+            padding: 4px 6px;
+            cursor: pointer;
+            border-bottom: 1px dotted #d0d0d0;
             display: flex;
-            flex-direction: column;
-            gap: 12px;
+            justify-content: space-between;
         }
-
-        .message {
-            max-width: 75%;
-            padding: 10px 14px;
-            border-radius: 8px;
-            font-size: 0.95rem;
-            line-height: 1.4;
-            word-break: break-word;
+        .contact-row:hover {
+            background: #000080;
+            color: #ffffff;
         }
-
-        .message.system {
-            align-self: center;
-            background-color: rgba(51, 65, 85, 0.4);
-            color: var(--text-secondary);
-            font-size: 0.8rem;
-            border-radius: 4px;
-            padding: 4px 8px;
+        .contact-row.active {
+            background: #000080;
+            color: #ffffff;
+            font-weight: bold;
         }
-
-        .message.incoming {
-            align-self: flex-start;
-            background-color: var(--border);
-            color: var(--text-primary);
-        }
-
-        .message.outgoing {
-            align-self: flex-end;
-            background-color: var(--accent);
-            color: var(--bg-primary);
-            font-weight: 500;
-        }
-
-        .message-meta {
-            font-size: 0.75rem;
-            opacity: 0.8;
-            margin-bottom: 2px;
-        }
-
-        .input-bar {
-            padding: 16px 20px;
-            background-color: rgba(15, 23, 42, 0.6);
-            border-top: 1px solid var(--border);
-            display: flex;
-            gap: 10px;
-        }
-
-        .input-bar input {
-            flex: 1;
+        .status-bar-cell {
+            border-top: 1px solid #808080;
+            border-left: 1px solid #808080;
+            border-right: 1px solid #ffffff;
+            border-bottom: 1px solid #ffffff;
+            padding: 2px 4px;
+            font-size: 10px;
         }
     </style>
 </head>
 <body>
-    <div class="chat-container">
-        <div class="header">
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <span style="font-size: 1.5rem;">☀️</span>
-                <h1>SUN_IN Messenger</h1>
-            </div>
-            <div class="user-header-controls" style="display: flex; align-items: center; gap: 14px;">
-                <div class="status-badge">
-                    <div id="statusDot" class="status-dot"></div>
-                    <span id="statusText">Подключение...</span>
-                </div>
-                <div id="headerUserBadge" style="font-size: 0.9rem; font-weight: 600; color: var(--accent); background: rgba(56, 189, 248, 0.1); padding: 4px 10px; border-radius: 8px; border: 1px solid rgba(56, 189, 248, 0.2);"></div>
-                <button id="logoutBtn" style="padding: 6px 14px; background: rgba(239, 68, 68, 0.15); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.35); border-radius: 8px; font-weight: 600; font-size: 0.8rem; cursor: pointer;">Выйти</button>
-            </div>
-        </div>
 
-        <div class="main-layout">
-            <!-- Боковая панель: список контактов / диалогов (как в Telegram) -->
-            <div class="sidebar">
-                <div class="sidebar-header">
-                    <span>Диалоги (Контакты)</span>
-                    <button id="refreshUsersBtn" style="padding: 2px 8px; font-size: 0.75rem;" disabled>↻</button>
-                </div>
-                <ul id="dialogList" class="chat-list">
-                    <li class="chat-item"><span style="color: var(--text-secondary); font-size: 0.85rem;">Войдите в аккаунт...</span></li>
-                </ul>
-            </div>
-
-            <!-- Область активного диалога -->
-            <div class="chat-view">
-                <div class="chat-view-header">
-                    <div>
-                        <span id="activeDialogTitle">Выберите контакт для переписки</span>
-                        <div id="activeDialogStatus" style="font-size: 0.75rem; color: var(--success); font-weight: normal;"></div>
-                    </div>
-                    <span id="userBadge" style="font-size: 0.8rem; color: var(--text-secondary);"></span>
-                </div>
-
-                <div id="messages" class="messages-area">
-                    <div class="message system">Авторизуйтесь (введите ник и нажмите «Войти»), чтобы увидеть список контактов в сети.</div>
-                </div>
-
-                <div class="input-bar">
-                    <input type="text" id="msgInput" placeholder="Напишите сообщение..." disabled>
-                    <button id="sendBtn" disabled>Отправить</button>
-                    <button id="pingBtn" style="background-color: var(--border); color: var(--text-primary);" disabled>PING</button>
-                </div>
-            </div>
+<div class="window">
+    <!-- Заголовок окна -->
+    <div class="title-bar">
+        <span>SUN_IN Messenger — [Рабочая станция v0.1.0]</span>
+        <div style="display: flex; gap: 2px;">
+            <div class="title-btn">_</div>
+            <div class="title-btn">□</div>
+            <div class="title-btn" id="titleCloseBtn" style="cursor: pointer;">✕</div>
         </div>
     </div>
 
-    <script type="module">
-        import { SunInClient, PacketType } from './sun_in_pure.js';
+    <!-- Строка меню Win95/98 -->
+    <div class="menu-bar">
+        <span class="menu-item"><u>Ф</u>айл</span>
+        <span class="menu-item"><u>П</u>равка</span>
+        <span class="menu-item"><u>В</u>ид</span>
+        <span class="menu-item"><u>С</u>ервис</span>
+        <span class="menu-item" id="menuHelp" style="cursor: pointer;"><u>С</u>правка</span>
+    </div>
 
-        // 1. Проверяем сохраненную авторизацию
-        const rawAuth = localStorage.getItem('sun_in_auth');
-        if (!rawAuth) {
-            window.location.href = 'auth.html';
+    <div style="padding: 6px;">
+        <!-- Панель управления пользователем и статусом -->
+        <table width="100%" border="0" cellpadding="2" cellspacing="2" style="margin-bottom: 6px;">
+            <tr>
+                <td>
+                    <b>Учетная запись:</b> <span id="headerUserBadge" style="color: #000080; font-weight: bold;">@user</span>
+                </td>
+                <td align="center">
+                    <b>Статус:</b> <span id="statusText">Подключение...</span>
+                </td>
+                <td align="right">
+                    <button type="button" id="refreshUsersBtn" disabled>Обновить контакты</button>
+                    <button type="button" id="pingBtn" disabled>PING</button>
+                    <button type="button" id="logoutBtn">Выход</button>
+                </td>
+            </tr>
+        </table>
+
+        <!-- Основная рабочая область: Контакты слева, Чат справа -->
+        <table width="100%" border="0" cellpadding="0" cellspacing="4">
+            <tr valign="top">
+                <!-- Колонка контактов -->
+                <td width="220">
+                    <fieldset style="height: 380px; display: flex; flex-direction: column;">
+                        <legend>Контакты в сети</legend>
+                        <div id="dialogList" class="inset-panel" style="flex: 1; overflow-y: auto; padding: 2px;">
+                            <div style="color: #808080; padding: 4px;">Загрузка списка...</div>
+                        </div>
+                    </fieldset>
+                </td>
+
+                <!-- Колонка сообщений -->
+                <td>
+                    <fieldset style="height: 380px; display: flex; flex-direction: column;">
+                        <legend id="activeDialogTitle">Диалог: (выберите собеседника слева)</legend>
+                        
+                        <!-- Список сообщений -->
+                        <div id="messages" class="inset-panel" style="flex: 1; overflow-y: auto; padding: 6px; font-family: 'Courier New', monospace; font-size: 11px; line-height: 1.3;">
+                            <div style="color: #606060;">[Система]: Выполняется подключение к серверу SUN_IN...</div>
+                        </div>
+
+                        <!-- Поле ввода и кнопка отправки -->
+                        <table width="100%" border="0" cellpadding="2" cellspacing="0" style="margin-top: 4px;">
+                            <tr>
+                                <td>
+                                    <input type="text" id="msgInput" style="width: 100%;" placeholder="Введите текст сообщения..." disabled>
+                                </td>
+                                <td width="90" align="right">
+                                    <button type="button" id="sendBtn" style="width: 100%; font-weight: bold;" disabled>Отправить</button>
+                                </td>
+                            </tr>
+                        </table>
+                    </fieldset>
+                </td>
+            </tr>
+        </table>
+
+        <!-- Строка состояния (Status bar) -->
+        <table width="100%" border="0" cellpadding="0" cellspacing="2" style="margin-top: 6px;">
+            <tr>
+                <td class="status-bar-cell">
+                    <span id="statusBarText">Готово. Выберите контакт для отправки защищенного сообщения.</span>
+                </td>
+                <td width="160" class="status-bar-cell" align="center">
+                    <span id="activeDialogStatus">Нет связи</span>
+                </td>
+            </tr>
+        </table>
+    </div>
+</div>
+
+<script type="module">
+    import { SunInClient } from './sun_in_pure.js';
+
+    // 1. Проверка сессии
+    const rawAuth = localStorage.getItem('sun_in_auth');
+    if (!rawAuth) {
+        window.location.href = 'auth.html';
+    }
+
+    let authData = null;
+    try {
+        authData = JSON.parse(rawAuth);
+    } catch (_) {
+        localStorage.removeItem('sun_in_auth');
+        window.location.href = 'auth.html';
+    }
+
+    if (!authData || !authData.nickname) {
+        window.location.href = 'auth.html';
+    }
+
+    let client = null;
+    let activeContact = null;
+    let currentUser = null;
+
+    // История диалогов: { "bob": [ { from, to, text, outgoing, time } ] }
+    const dialogHistories = {};
+
+    const statusText = document.getElementById('statusText');
+    const headerUserBadge = document.getElementById('headerUserBadge');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const refreshUsersBtn = document.getElementById('refreshUsersBtn');
+    const pingBtn = document.getElementById('pingBtn');
+    const dialogListEl = document.getElementById('dialogList');
+    const activeDialogTitle = document.getElementById('activeDialogTitle');
+    const activeDialogStatus = document.getElementById('activeDialogStatus');
+    const messagesDiv = document.getElementById('messages');
+    const msgInput = document.getElementById('msgInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const statusBarText = document.getElementById('statusBarText');
+    const titleCloseBtn = document.getElementById('titleCloseBtn');
+    const menuHelp = document.getElementById('menuHelp');
+
+    headerUserBadge.textContent = `@${authData.nickname}`;
+
+    titleCloseBtn.addEventListener('click', () => {
+        if (confirm('Закрыть SUN_IN Messenger и выйти из системы?')) {
+            logout();
+        }
+    });
+
+    menuHelp.addEventListener('click', () => {
+        alert('SUN_IN Messenger [alpha]\n\nE2E защищенный обмен сообщениями через протокол SUN_IN.\nРазработано в стиле классических утилит Realtek и Electronics Workbench.');
+    });
+
+    function logout() {
+        if (client) {
+            try { client.disconnect(); } catch (_) {}
+        }
+        localStorage.removeItem('sun_in_auth');
+        window.location.href = 'auth.html';
+    }
+
+    logoutBtn.addEventListener('click', logout);
+
+    function appendLog(line) {
+        const div = document.createElement('div');
+        div.textContent = line;
+        messagesDiv.appendChild(div);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+
+    function renderMessagesForActiveContact() {
+        messagesDiv.innerHTML = '';
+        if (!activeContact) {
+            appendLog('[Система]: Выберите контакт из левого списка для начала переписки.');
+            return;
         }
 
-        let authData = null;
-        try {
-            authData = JSON.parse(rawAuth);
-        } catch (_) {
-            localStorage.removeItem('sun_in_auth');
-            window.location.href = 'auth.html';
+        const history = dialogHistories[activeContact] || [];
+        if (history.length === 0) {
+            appendLog(`[Система]: Диалог с @${activeContact}. Сообщений пока нет.`);
+            return;
         }
 
-        if (!authData || !authData.nickname) {
-            window.location.href = 'auth.html';
+        history.forEach(m => {
+            const prefix = m.outgoing ? `[Вы -> @${m.to}]` : `[@${m.from}]`;
+            appendLog(`${prefix}: ${m.text}`);
+        });
+    }
+
+    function setConnected(connected) {
+        if (connected) {
+            statusText.innerHTML = '<font color="green"><b>В сети</b></font>';
+            refreshUsersBtn.disabled = false;
+            pingBtn.disabled = false;
+            msgInput.disabled = !activeContact;
+            sendBtn.disabled = !activeContact;
+            statusBarText.textContent = `Соединение с сервером активно. Пользователь: @${authData.nickname}`;
+        } else {
+            statusText.innerHTML = '<font color="red"><b>Отключено</b></font>';
+            refreshUsersBtn.disabled = true;
+            pingBtn.disabled = true;
+            msgInput.disabled = true;
+            sendBtn.disabled = true;
+            activeDialogStatus.textContent = 'Нет связи';
+            statusBarText.textContent = 'Соединение с сервером разорвано.';
+        }
+    }
+
+    function renderUserList(users) {
+        dialogListEl.innerHTML = '';
+        const contacts = users.filter(u => u !== (client?.nickname || authData.nickname));
+
+        if (contacts.length === 0) {
+            dialogListEl.innerHTML = '<div style="color: #808080; padding: 4px;">Нет других пользователей</div>';
+            return;
         }
 
-        let client = null;
-        let activeContact = null;
-        let currentUser = null;
+        contacts.forEach(user => {
+            const div = document.createElement('div');
+            div.className = `contact-row ${user === activeContact ? 'active' : ''}`;
+            div.innerHTML = `<span>@${user}</span><span style="font-size: 10px;">[онлайн]</span>`;
+            div.onclick = () => {
+                activeContact = user;
+                activeDialogTitle.textContent = `Диалог: @${user}`;
+                activeDialogStatus.textContent = `Связь: @${user}`;
+                statusBarText.textContent = `Выбран контакт @${user}. Введите сообщение в поле ввода.`;
+                document.querySelectorAll('.contact-row').forEach(el => el.classList.remove('active'));
+                div.classList.add('active');
+                msgInput.disabled = false;
+                sendBtn.disabled = false;
+                msgInput.focus();
+                renderMessagesForActiveContact();
+            };
+            dialogListEl.appendChild(div);
+        });
+    }
 
-        // Локальное хранилище истории сообщений по контактам: { "bob": [ { from, text, time, outgoing } ] }
-        const dialogHistories = {};
+    async function initConnection() {
+        const serverUrl = authData.server_url || 'ws://127.0.0.1:8765';
+        client = new SunInClient(serverUrl, authData.nickname);
 
-        const statusDot = document.getElementById('statusDot');
-        const statusText = document.getElementById('statusText');
-        const headerUserBadge = document.getElementById('headerUserBadge');
-        const logoutBtn = document.getElementById('logoutBtn');
-        const refreshUsersBtn = document.getElementById('refreshUsersBtn');
-        const pingBtn = document.getElementById('pingBtn');
-        const dialogListEl = document.getElementById('dialogList');
-        const activeDialogTitle = document.getElementById('activeDialogTitle');
-        const activeDialogStatus = document.getElementById('activeDialogStatus');
-        const userBadge = document.getElementById('userBadge');
-        const messagesDiv = document.getElementById('messages');
-        const msgInput = document.getElementById('msgInput');
-        const sendBtn = document.getElementById('sendBtn');
-
-        headerUserBadge.textContent = `@${authData.nickname}`;
-
-        // Кнопка Выйти: удаление сессии и переход на страницу авторизации
-        logoutBtn.addEventListener('click', () => {
-            if (client) {
-                try { client.disconnect(); } catch (_) {}
-            }
-            localStorage.removeItem('sun_in_auth');
-            window.location.href = 'auth.html';
+        client.on('open', () => {
+            appendLog(`[Система]: Соединение с сервером ${serverUrl} установлено.`);
+            appendLog(`[Система]: Авторизация @${authData.nickname}...`);
+            client.authenticate(authData.nickname, authData.token || '');
         });
 
-        function appendMessage(type, text, meta = '') {
-            const el = document.createElement('div');
-            el.className = `message ${type}`;
-            if (meta) {
-                const metaEl = document.createElement('div');
-                metaEl.className = 'message-meta';
-                metaEl.textContent = meta;
-                el.appendChild(metaEl);
-            }
-            const textNode = document.createTextNode(text);
-            el.appendChild(textNode);
-            messagesDiv.appendChild(el);
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
-        }
+        client.on('AUTH_SUCCESS', (pkt) => {
+            currentUser = pkt.auth_success;
+            setConnected(true);
+            headerUserBadge.textContent = `@${currentUser.nickname} [${currentUser.user_id}]`;
+            appendLog(`[Система]: ${currentUser.message}.`);
+            client.requestUsers();
+        });
 
-        function renderMessagesForActiveContact() {
-            messagesDiv.innerHTML = '';
-            if (!activeContact) {
-                appendMessage('system', 'Выберите контакт из списка слева, чтобы начать диалог.');
-                return;
-            }
+        client.on('AUTH_FAIL', (pkt) => {
+            const reason = pkt.auth_fail?.reason || 'Сессия недействительна';
+            setConnected(false);
+            alert(`Ошибка авторизации: ${reason}. Пожалуйста, войдите снова.`);
+            logout();
+        });
 
-            const history = dialogHistories[activeContact] || [];
-            if (history.length === 0) {
-                appendMessage('system', `Диалог с @${activeContact}. Сообщений пока нет.`);
-                return;
-            }
+        client.on('USER_LIST_RESP', (pkt) => {
+            const users = pkt.user_list_resp?.users || [];
+            renderUserList(users);
+        });
 
-            history.forEach(m => {
-                appendMessage(m.outgoing ? 'outgoing' : 'incoming', m.text, m.outgoing ? 'Вы' : `@${m.from}`);
+        client.on('MSG_DIRECT', (pkt) => {
+            const md = pkt.msg_direct;
+            if (!md) return;
+
+            const myNick = client.nickname || authData.nickname;
+            const isMe = md.from_user === myNick;
+            const otherParty = isMe ? md.to_user : md.from_user;
+
+            if (!dialogHistories[otherParty]) {
+                dialogHistories[otherParty] = [];
+            }
+            dialogHistories[otherParty].push({
+                from: md.from_user,
+                to: md.to_user,
+                text: md.text,
+                outgoing: isMe,
             });
-        }
 
-        function setConnected(connected) {
-            if (connected) {
-                statusDot.classList.add('connected');
-                statusText.textContent = 'В сети';
-                refreshUsersBtn.disabled = false;
-                pingBtn.disabled = false;
-                msgInput.disabled = !activeContact;
-                sendBtn.disabled = !activeContact;
+            if (activeContact === otherParty) {
+                const prefix = isMe ? `[Вы -> @${md.to_user}]` : `[@${md.from_user}]`;
+                appendLog(`${prefix}: ${md.text}`);
             } else {
-                statusDot.classList.remove('connected');
-                statusText.textContent = 'Отключено';
-                refreshUsersBtn.disabled = true;
-                pingBtn.disabled = true;
-                msgInput.disabled = true;
-                sendBtn.disabled = true;
-                activeDialogStatus.textContent = '';
-            }
-        }
-
-        function renderUserList(users) {
-            dialogListEl.innerHTML = '';
-            // Исключаем самого себя из списка собеседников
-            const contacts = users.filter(u => u !== (client?.nickname || authData.nickname));
-
-            if (contacts.length === 0) {
-                dialogListEl.innerHTML = '<li class="chat-item"><span style="color: var(--text-secondary); font-size: 0.85rem;">Нет других пользователей онлайн</span></li>';
-                return;
-            }
-
-            contacts.forEach(user => {
-                const li = document.createElement('li');
-                li.className = `chat-item ${user === activeContact ? 'active' : ''}`;
-                li.innerHTML = `
-                    <span>@${user}</span>
-                    <span class="chat-badge" style="background: rgba(34,197,94,0.2); color: var(--success);">online</span>
-                `;
-                li.onclick = () => {
-                    activeContact = user;
-                    activeDialogTitle.textContent = `@${user}`;
-                    activeDialogStatus.textContent = 'В сети';
-                    document.querySelectorAll('.chat-item').forEach(el => el.classList.remove('active'));
-                    li.classList.add('active');
-                    msgInput.disabled = false;
-                    sendBtn.disabled = false;
-                    msgInput.focus();
-                    renderMessagesForActiveContact();
-                };
-                dialogListEl.appendChild(li);
-            });
-        }
-
-        async function initConnection() {
-            const serverUrl = authData.server_url || 'ws://127.0.0.1:8765';
-            client = new SunInClient(serverUrl, authData.nickname);
-
-            client.on('open', () => {
-                appendMessage('system', `Подключение к серверу установлено. Вход как @${authData.nickname}...`);
-                client.authenticate(authData.nickname, authData.token || '');
-            });
-
-            client.on('AUTH_SUCCESS', (pkt) => {
-                currentUser = pkt.auth_success;
-                setConnected(true);
-                headerUserBadge.textContent = `@${currentUser.nickname} (${currentUser.user_id})`;
-                userBadge.textContent = `@${currentUser.nickname}`;
-                appendMessage('system', `✅ ${currentUser.message}. Выберите собеседника слева.`);
-                client.requestUsers();
-            });
-
-            client.on('AUTH_FAIL', (pkt) => {
-                const reason = pkt.auth_fail?.reason || 'Сессия недействительна';
-                setConnected(false);
-                alert(`Ошибка авторизации: ${reason}. Пожалуйста, войдите снова.`);
-                localStorage.removeItem('sun_in_auth');
-                window.location.href = 'auth.html';
-            });
-
-            client.on('USER_LIST_RESP', (pkt) => {
-                const users = pkt.user_list_resp?.users || [];
-                renderUserList(users);
-            });
-
-            client.on('MSG_DIRECT', (pkt) => {
-                const md = pkt.msg_direct;
-                if (!md) return;
-
-                const myNick = client.nickname || authData.nickname;
-                const isMe = md.from_user === myNick;
-                const otherParty = isMe ? md.to_user : md.from_user;
-
-                if (!dialogHistories[otherParty]) {
-                    dialogHistories[otherParty] = [];
-                }
-                dialogHistories[otherParty].push({
-                    from: md.from_user,
-                    to: md.to_user,
-                    text: md.text,
-                    outgoing: isMe,
-                });
-
-                if (activeContact === otherParty) {
-                    appendMessage(isMe ? 'outgoing' : 'incoming', md.text, isMe ? 'Вы' : `@${md.from_user}`);
-                }
-            });
-
-            client.on('PONG', (pkt) => {
-                const sender = pkt.pong?.sender || 'server';
-                appendMessage('incoming', `PONG получен от [${sender}] (seq=${pkt.seq_id})`);
-            });
-
-            client.on('close', () => {
-                setConnected(false);
-                appendMessage('system', 'Соединение с сервером закрыто');
-            });
-
-            client.on('error', () => {
-                setConnected(false);
-                appendMessage('system', 'Ошибка связи с сервером WebSocket');
-            });
-
-            try {
-                appendMessage('system', `Подключение к ${serverUrl}...`);
-                await client.connect();
-            } catch (e) {
-                setConnected(false);
-                appendMessage('system', `❌ Не удалось подключиться к серверу ${serverUrl}. Запущен ли server/main.py?`);
-            }
-        }
-
-        refreshUsersBtn.addEventListener('click', () => {
-            if (client) client.requestUsers();
-        });
-
-        pingBtn.addEventListener('click', () => {
-            if (client) {
-                const seq = client.ping();
-                appendMessage('outgoing', `PING отправлен (seq=${seq})`);
+                statusBarText.textContent = `Новое сообщение от @${md.from_user}!`;
             }
         });
 
-        function sendMessage() {
-            const text = msgInput.value.trim();
-            if (!text || !client || !activeContact) return;
-
-            client.sendDirect(activeContact, text);
-            msgInput.value = '';
-        }
-
-        sendBtn.addEventListener('click', sendMessage);
-        msgInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') sendMessage();
+        client.on('PONG', (pkt) => {
+            const sender = pkt.pong?.sender || 'сервер';
+            appendLog(`[Служба]: PONG получен от [${sender}] (seq=${pkt.seq_id})`);
         });
 
-        // Запуск
-        initConnection();
-    </script>
+        client.on('close', () => {
+            setConnected(false);
+            appendLog('[Система]: Соединение с сервером закрыто.');
+        });
+
+        client.on('error', () => {
+            setConnected(false);
+            appendLog('[Ошибка]: Сбой связи с сервером WebSocket.');
+        });
+
+        try {
+            appendLog(`[Система]: Открытие сокета ${serverUrl}...`);
+            await client.connect();
+        } catch (e) {
+            setConnected(false);
+            appendLog(`[Ошибка]: Не удалось открыть сокет ${serverUrl}.`);
+        }
+    }
+
+    refreshUsersBtn.addEventListener('click', () => {
+        if (client) {
+            client.requestUsers();
+            statusBarText.textContent = 'Запрос списка активных пользователей...';
+        }
+    });
+
+    pingBtn.addEventListener('click', () => {
+        if (client) {
+            const seq = client.ping();
+            appendLog(`[Служба]: PING отправлен на сервер (seq=${seq})`);
+        }
+    });
+
+    function sendMessage() {
+        const text = msgInput.value.trim();
+        if (!text || !client || !activeContact) return;
+
+        client.sendDirect(activeContact, text);
+        msgInput.value = '';
+    }
+
+    sendBtn.addEventListener('click', sendMessage);
+    msgInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') sendMessage();
+    });
+
+    // Запуск приложения
+    initConnection();
+</script>
+
 </body>
 </html>

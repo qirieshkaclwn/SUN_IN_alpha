@@ -2,624 +2,413 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SUN_IN — Авторизация и Регистрация</title>
+    <title>Установка SUN_IN — Мастер входа и регистрации</title>
     <style>
-        :root {
-            --bg-primary: #0f172a;
-            --bg-secondary: #1e293b;
-            --bg-tertiary: #0b1120;
-            --text-primary: #f8fafc;
-            --text-secondary: #94a3b8;
-            --accent: #38bdf8;
-            --accent-hover: #0284c7;
-            --accent-gradient: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%);
-            --border: #334155;
-            --success: #22c55e;
-            --danger: #ef4444;
-            --warning: #f59e0b;
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-        }
-
         body {
-            background-color: var(--bg-primary);
-            color: var(--text-primary);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            background-color: #008080;
+            font-family: 'MS Sans Serif', Tahoma, 'Segoe UI', sans-serif;
+            font-size: 11px;
+            color: #000000;
+            margin: 0;
             padding: 20px;
-            background-image: 
-                radial-gradient(circle at 15% 15%, rgba(56, 189, 248, 0.08) 0%, transparent 40%),
-                radial-gradient(circle at 85% 85%, rgba(129, 140, 248, 0.08) 0%, transparent 40%);
-        }
-
-        .auth-card {
-            width: 100%;
-            max-width: 440px;
-            background-color: var(--bg-secondary);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 36px 32px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .auth-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: var(--accent-gradient);
-        }
-
-        .brand-header {
-            text-align: center;
-            margin-bottom: 28px;
-        }
-
-        .brand-logo {
-            width: 56px;
-            height: 56px;
-            margin: 0 auto 12px;
-            background: var(--accent-gradient);
-            border-radius: 14px;
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 28px;
-            box-shadow: 0 10px 15px -3px rgba(56, 189, 248, 0.3);
+            min-height: 90vh;
         }
-
-        .brand-header h1 {
-            font-size: 1.6rem;
-            font-weight: 700;
-            letter-spacing: -0.5px;
-            color: var(--text-primary);
+        .window {
+            background-color: #c0c0c0;
+            border-top: 2px solid #ffffff;
+            border-left: 2px solid #ffffff;
+            border-right: 2px solid #000000;
+            border-bottom: 2px solid #000000;
+            box-shadow: 1px 1px 0 #000000;
+            width: 500px;
+            padding: 3px;
         }
-
-        .brand-header p {
-            color: var(--text-secondary);
-            font-size: 0.85rem;
-            margin-top: 4px;
-        }
-
-        /* Табы переключения */
-        .tabs {
-            display: flex;
-            background-color: rgba(15, 23, 42, 0.7);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 4px;
-            margin-bottom: 24px;
-        }
-
-        .tab-btn {
-            flex: 1;
-            padding: 9px 12px;
-            background: none;
-            border: none;
-            color: var(--text-secondary);
-            font-size: 0.9rem;
-            font-weight: 600;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .tab-btn.active {
-            background-color: var(--accent);
-            color: var(--bg-primary);
-            box-shadow: 0 2px 8px rgba(56, 189, 248, 0.3);
-        }
-
-        /* Форма */
-        .form-group {
-            margin-bottom: 18px;
-        }
-
-        .form-group label {
-            display: block;
-            font-size: 0.82rem;
-            font-weight: 600;
-            color: var(--text-secondary);
-            margin-bottom: 6px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .input-wrapper {
-            position: relative;
-            display: flex;
-            align-items: center;
-        }
-
-        .input-prefix {
-            position: absolute;
-            left: 12px;
-            color: var(--text-secondary);
-            font-size: 0.95rem;
-            pointer-events: none;
-        }
-
-        .input-field {
-            width: 100%;
-            padding: 12px 14px;
-            background-color: rgba(15, 23, 42, 0.8);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            color: var(--text-primary);
-            font-size: 0.95rem;
-            outline: none;
-            transition: border-color 0.2s, box-shadow 0.2s;
-        }
-
-        .input-field.has-prefix {
-            padding-left: 30px;
-        }
-
-        .input-field:focus {
-            border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
-        }
-
-        .toggle-pwd {
-            position: absolute;
-            right: 12px;
-            background: none;
-            border: none;
-            color: var(--text-secondary);
-            cursor: pointer;
-            font-size: 1rem;
-            padding: 4px;
-        }
-
-        .toggle-pwd:hover {
-            color: var(--text-primary);
-        }
-
-        .help-text {
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-            margin-top: 5px;
-        }
-
-        /* Кнопка отправки */
-        .submit-btn {
-            width: 100%;
-            padding: 13px;
-            margin-top: 8px;
-            background: var(--accent-gradient);
-            color: var(--bg-primary);
-            border: none;
-            border-radius: 10px;
-            font-size: 0.95rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: opacity 0.2s, transform 0.1s;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .submit-btn:hover {
-            opacity: 0.95;
-            transform: translateY(-1px);
-        }
-
-        .submit-btn:active {
-            transform: translateY(0);
-        }
-
-        .submit-btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        /* Серверные настройки */
-        .server-config {
-            margin-top: 20px;
-            border-top: 1px solid var(--border);
-            padding-top: 16px;
-        }
-
-        .server-config-toggle {
-            background: none;
-            border: none;
-            color: var(--text-secondary);
-            font-size: 0.8rem;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            margin-bottom: 8px;
-        }
-
-        .server-config-toggle:hover {
-            color: var(--accent);
-        }
-
-        .server-inputs {
-            display: none;
-            margin-top: 8px;
-        }
-
-        .server-inputs.open {
-            display: block;
-        }
-
-        /* Уведомления */
-        .alert-box {
-            padding: 12px 14px;
-            border-radius: 10px;
-            font-size: 0.85rem;
-            margin-bottom: 18px;
-            display: none;
-            line-height: 1.4;
-        }
-
-        .alert-box.error {
-            display: block;
-            background-color: rgba(239, 68, 68, 0.15);
-            border: 1px solid rgba(239, 68, 68, 0.4);
-            color: #fca5a5;
-        }
-
-        .alert-box.success {
-            display: block;
-            background-color: rgba(34, 197, 94, 0.15);
-            border: 1px solid rgba(34, 197, 94, 0.4);
-            color: #86efac;
-        }
-
-        .alert-box.info {
-            display: block;
-            background-color: rgba(56, 189, 248, 0.15);
-            border: 1px solid rgba(56, 189, 248, 0.4);
-            color: #bae6fd;
-        }
-
-        .token-display {
-            margin-top: 8px;
-            padding: 8px 10px;
-            background-color: var(--bg-tertiary);
-            border: 1px dashed var(--accent);
-            border-radius: 6px;
-            font-family: monospace;
-            font-size: 0.85rem;
-            word-break: break-all;
-            user-select: all;
-            color: var(--accent);
+        .title-bar {
+            background: #000080;
+            color: #ffffff;
+            font-weight: bold;
+            padding: 3px 5px;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
-
-        .copy-btn {
-            background: none;
-            border: none;
-            color: var(--text-primary);
+        .title-btn {
+            background: #c0c0c0;
+            border-top: 1px solid #ffffff;
+            border-left: 1px solid #ffffff;
+            border-right: 1px solid #000000;
+            border-bottom: 1px solid #000000;
+            font-size: 9px;
+            font-weight: bold;
+            width: 16px;
+            height: 14px;
+            line-height: 12px;
+            text-align: center;
+            cursor: default;
+        }
+        .wizard-body {
+            padding: 12px;
+            background: #c0c0c0;
+        }
+        fieldset {
+            border-top: 2px solid #808080;
+            border-left: 2px solid #808080;
+            border-right: 2px solid #ffffff;
+            border-bottom: 2px solid #ffffff;
+            margin-bottom: 10px;
+            padding: 8px 10px;
+        }
+        legend {
+            font-weight: bold;
+            color: #000000;
+            padding: 0 4px;
+        }
+        input[type="text"], input[type="password"] {
+            border-top: 2px solid #808080;
+            border-left: 2px solid #808080;
+            border-right: 2px solid #ffffff;
+            border-bottom: 2px solid #ffffff;
+            background: #ffffff;
+            font-family: 'MS Sans Serif', Tahoma, 'Segoe UI', sans-serif;
+            font-size: 11px;
+            padding: 2px 4px;
+            box-sizing: border-box;
+        }
+        input[type="text"]:disabled, input[type="password"]:disabled {
+            background: #e0e0e0;
+            color: #808080;
+        }
+        button {
+            background: #c0c0c0;
+            border-top: 2px solid #ffffff;
+            border-left: 2px solid #ffffff;
+            border-right: 2px solid #000000;
+            border-bottom: 2px solid #000000;
+            font-family: 'MS Sans Serif', Tahoma, 'Segoe UI', sans-serif;
+            font-size: 11px;
+            padding: 3px 12px;
+            min-width: 75px;
             cursor: pointer;
-            font-size: 0.75rem;
-            padding: 2px 6px;
-            border-radius: 4px;
-            background-color: var(--border);
-            margin-left: 6px;
         }
-
-        .copy-btn:hover {
-            background-color: var(--accent);
-            color: var(--bg-primary);
+        button:active {
+            border-top: 2px solid #000000;
+            border-left: 2px solid #000000;
+            border-right: 2px solid #ffffff;
+            border-bottom: 2px solid #ffffff;
+            padding: 4px 11px 2px 13px;
         }
-
-        .spinner {
-            width: 18px;
-            height: 18px;
-            border: 2px solid rgba(15, 23, 42, 0.3);
-            border-top-color: var(--bg-primary);
-            border-radius: 50%;
-            animation: spin 0.6s linear infinite;
+        button:disabled {
+            color: #808080;
+            cursor: default;
         }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+        .status-box {
+            background: #ffffff;
+            border-top: 2px solid #808080;
+            border-left: 2px solid #808080;
+            border-right: 2px solid #ffffff;
+            border-bottom: 2px solid #ffffff;
+            padding: 6px;
+            min-height: 42px;
+            font-family: 'MS Sans Serif', Tahoma, sans-serif;
+            font-size: 11px;
+            box-sizing: border-box;
+        }
+        .banner {
+            background: #ffffff;
+            border-top: 2px solid #808080;
+            border-left: 2px solid #808080;
+            border-right: 2px solid #ffffff;
+            border-bottom: 2px solid #ffffff;
+            padding: 8px 12px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
     </style>
 </head>
 <body>
-    <div class="auth-card">
-        <div class="brand-header">
-            <div class="brand-logo">☀️</div>
-            <h1>SUN_IN</h1>
-            <p id="brandSubtitle">Защищенный E2E мессенджер</p>
-        </div>
 
-        <!-- Табы -->
-        <div class="tabs">
-            <button type="button" class="tab-btn active" id="tabLogin">Вход</button>
-            <button type="button" class="tab-btn" id="tabRegister">Регистрация</button>
-        </div>
-
-        <!-- Уведомление -->
-        <div id="alertBox" class="alert-box"></div>
-
-        <!-- Форма -->
-        <form id="authForm" autocomplete="off">
-            <div class="form-group">
-                <label for="nickname">Никнейм</label>
-                <div class="input-wrapper">
-                    <span class="input-prefix">@</span>
-                    <input 
-                        type="text" 
-                        id="nickname" 
-                        class="input-field has-prefix" 
-                        placeholder="username" 
-                        required 
-                        minlength="3" 
-                        maxlength="32" 
-                        autocomplete="username"
-                    >
-                </div>
-                <div class="help-text" id="nickHelp">От 3 до 32 символов (латиница, цифры, _, -)</div>
-            </div>
-
-            <div class="form-group">
-                <label for="token" id="tokenLabel">Пароль или токен</label>
-                <div class="input-wrapper">
-                    <input 
-                        type="password" 
-                        id="token" 
-                        class="input-field" 
-                        placeholder="Секретный ключ или пароль" 
-                        autocomplete="current-password"
-                    >
-                    <button type="button" class="toggle-pwd" id="togglePwd" title="Показать/скрыть">👁️</button>
-                </div>
-                <div class="help-text" id="tokenHelp">Введите пароль, указанный при регистрации</div>
-            </div>
-
-            <button type="submit" class="submit-btn" id="submitBtn">
-                <span id="btnText">Войти в аккаунт</span>
-            </button>
-        </form>
-
-        <!-- Настройки сервера -->
-        <div class="server-config">
-            <button type="button" class="server-config-toggle" id="toggleServerConfig">
-                <span>⚙️ Параметры подключения к серверу</span>
-                <span id="serverToggleIcon">▾</span>
-            </button>
-            <div class="server-inputs" id="serverInputs">
-                <div class="form-group" style="margin-bottom: 0;">
-                    <label for="serverUrl" style="font-size: 0.75rem;">WebSocket URL</label>
-                    <input 
-                        type="text" 
-                        id="serverUrl" 
-                        class="input-field" 
-                        value="ws://127.0.0.1:8765" 
-                        style="padding: 8px 12px; font-size: 0.85rem;"
-                    >
-                </div>
-            </div>
+<div class="window">
+    <!-- Заголовок окна -->
+    <div class="title-bar">
+        <span>SUN_IN Setup — Мастер авторизации</span>
+        <div style="display: flex; gap: 2px;">
+            <div class="title-btn">_</div>
+            <div class="title-btn">□</div>
+            <div class="title-btn">✕</div>
         </div>
     </div>
 
-    <script type="module">
-        import { SunInClient, PacketType } from './sun_in_pure.js';
+    <div class="wizard-body">
+        <!-- Белый баннер в стиле InstallShield / Realtek Setup -->
+        <div class="banner">
+            <div>
+                <b>Мастер подключения к сети SUN_IN</b><br>
+                <small>Выберите режим входа в систему или создание новой учетной записи.</small>
+            </div>
+            <div style="font-size: 24px;">☀️</div>
+        </div>
 
-        let currentMode = 'login'; // 'login' | 'register'
-        let client = null;
+        <!-- Выбор режима: Вход / Регистрация -->
+        <fieldset>
+            <legend>Тип установки / входа</legend>
+            <table border="0" cellpadding="2" cellspacing="0" width="100%">
+                <tr>
+                    <td width="50%">
+                        <label>
+                            <input type="radio" name="authMode" id="modeLogin" value="login" checked>
+                            <b>Вход (Существующий пользователь)</b>
+                        </label>
+                    </td>
+                    <td width="50%">
+                        <label>
+                            <input type="radio" name="authMode" id="modeRegister" value="register">
+                            <b>Регистрация (Новый пользователь)</b>
+                        </label>
+                    </td>
+                </tr>
+            </table>
+        </fieldset>
 
-        const tabLogin = document.getElementById('tabLogin');
-        const tabRegister = document.getElementById('tabRegister');
-        const authForm = document.getElementById('authForm');
-        const nicknameInput = document.getElementById('nickname');
-        const tokenInput = document.getElementById('tokenInput');
-        const tokenLabel = document.getElementById('tokenLabel');
-        const tokenHelp = document.getElementById('tokenHelp');
-        const submitBtn = document.getElementById('submitBtn');
-        const btnText = document.getElementById('btnText');
-        const alertBox = document.getElementById('alertBox');
-        const togglePwd = document.getElementById('togglePwd');
-        const tokenInputField = document.getElementById('token');
-        const serverUrlInput = document.getElementById('serverUrl');
-        const toggleServerConfig = document.getElementById('toggleServerConfig');
-        const serverInputs = document.getElementById('serverInputs');
-        const serverToggleIcon = document.getElementById('serverToggleIcon');
+        <!-- Поля формы -->
+        <form id="authForm" autocomplete="off">
+            <fieldset>
+                <legend>Учетные данные пользователя</legend>
+                <table border="0" cellpadding="3" cellspacing="0" width="100%">
+                    <tr>
+                        <td width="140" align="right"><label for="nickname">Имя пользователя:</label></td>
+                        <td>
+                            <input type="text" id="nickname" style="width: 100%;" placeholder="nickname" required minlength="3" maxlength="32">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="right"><label for="token" id="tokenLabel">Пароль / Ключ:</label></td>
+                        <td>
+                            <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                                <tr>
+                                    <td><input type="password" id="token" style="width: 100%;" placeholder="Секретный ключ или пароль"></td>
+                                    <td width="70" align="right">
+                                        <button type="button" id="togglePwd" style="min-width: 65px; font-size: 10px; padding: 2px;">Показать</button>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td></td>
+                        <td style="color: #404040; font-size: 10px;" id="tokenHint">
+                            Для входа введите пароль или ключ, сохраненный при регистрации.
+                        </td>
+                    </tr>
+                </table>
+            </fieldset>
 
-        // Переключение видимости пароля
-        togglePwd.addEventListener('click', () => {
-            const isPassword = tokenInputField.type === 'password';
-            tokenInputField.type = isPassword ? 'text' : 'password';
-            togglePwd.textContent = isPassword ? '🔒' : '👁️';
-        });
+            <!-- Параметры сервера -->
+            <fieldset>
+                <legend>Параметры соединения (Сокет)</legend>
+                <table border="0" cellpadding="3" cellspacing="0" width="100%">
+                    <tr>
+                        <td width="140" align="right"><label for="serverUrl">Адрес сервера:</label></td>
+                        <td>
+                            <input type="text" id="serverUrl" style="width: 100%;" value="ws://127.0.0.1:8765">
+                        </td>
+                    </tr>
+                </table>
+            </fieldset>
 
-        // Сворачивание / разворачивание настроек сервера
-        toggleServerConfig.addEventListener('click', () => {
-            const isOpen = serverInputs.classList.toggle('open');
-            serverToggleIcon.textContent = isOpen ? '▴' : '▾';
-        });
+            <!-- Информационное окно состояния -->
+            <fieldset>
+                <legend>Состояние мастера установки</legend>
+                <div id="statusMessage" class="status-box">
+                    Готов к подключению. Введите имя пользователя и нажмите «Далее &gt;».
+                </div>
+            </fieldset>
 
-        // Переключение режимов
-        function setMode(mode) {
-            currentMode = mode;
-            hideAlert();
+            <!-- Разделитель и классические кнопки мастера установки -->
+            <div style="border-top: 1px solid #808080; border-bottom: 1px solid #ffffff; margin: 12px 0 10px 0;"></div>
 
-            if (mode === 'login') {
-                tabLogin.classList.add('active');
-                tabRegister.classList.remove('active');
-                tokenLabel.textContent = 'Пароль или токен';
-                tokenInputField.placeholder = 'Секретный ключ или пароль';
-                tokenHelp.textContent = 'Введите персональный токен или пароль';
-                btnText.textContent = 'Войти в аккаунт';
-                loadSavedTokenForNick();
-            } else {
-                tabRegister.classList.add('active');
-                tabLogin.classList.remove('active');
-                tokenLabel.textContent = 'Пароль (опционально)';
-                tokenInputField.placeholder = 'Придумайте пароль или оставьте пустым';
-                tokenHelp.textContent = 'Если оставить пустым, сервер автоматически создаст надежный ключ';
-                btnText.textContent = 'Зарегистрироваться';
-                tokenInputField.value = '';
-            }
-        }
+            <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                <tr>
+                    <td align="left">
+                        <button type="button" id="helpBtn">Справка</button>
+                    </td>
+                    <td align="right">
+                        <button type="button" id="backBtn" disabled>&lt; Назад</button>
+                        <button type="submit" id="submitBtn"><b>Далее &gt;</b></button>
+                        <button type="button" id="cancelBtn">Отмена</button>
+                    </td>
+                </tr>
+            </table>
+        </form>
+    </div>
+</div>
 
-        tabLogin.addEventListener('click', () => setMode('login'));
-        tabRegister.addEventListener('click', () => setMode('register'));
+<script type="module">
+    import { SunInClient } from './sun_in_pure.js';
 
-        function showAlert(type, message, htmlContent = '') {
-            alertBox.className = `alert-box ${type}`;
-            alertBox.innerHTML = message;
-            if (htmlContent) {
-                alertBox.innerHTML += htmlContent;
-            }
-            alertBox.style.display = 'block';
-        }
+    let currentMode = 'login';
+    let client = null;
 
-        function hideAlert() {
-            alertBox.style.display = 'none';
-            alertBox.innerHTML = '';
-        }
+    const modeLogin = document.getElementById('modeLogin');
+    const modeRegister = document.getElementById('modeRegister');
+    const authForm = document.getElementById('authForm');
+    const nicknameInput = document.getElementById('nickname');
+    const tokenInput = document.getElementById('token');
+    const tokenLabel = document.getElementById('tokenLabel');
+    const tokenHint = document.getElementById('tokenHint');
+    const serverUrlInput = document.getElementById('serverUrl');
+    const statusMessage = document.getElementById('statusMessage');
+    const submitBtn = document.getElementById('submitBtn');
+    const togglePwd = document.getElementById('togglePwd');
+    const cancelBtn = document.getElementById('cancelBtn');
+    const helpBtn = document.getElementById('helpBtn');
 
-        function setLoading(loading) {
-            submitBtn.disabled = loading;
-            if (loading) {
-                btnText.innerHTML = '<div class="spinner"></div><span>Подключение к серверу...</span>';
-            } else {
-                btnText.textContent = currentMode === 'login' ? 'Войти в аккаунт' : 'Зарегистрироваться';
-            }
-        }
-
-        // Автозаполнение сохраненного токена
-        function loadSavedTokenForNick() {
-            if (currentMode !== 'login') return;
-            const nick = nicknameInput.value.trim().toLowerCase();
-            if (!nick) return;
-            const saved = localStorage.getItem('sun_in_token_' + nick);
-            if (saved) {
-                tokenInputField.value = saved;
-            }
-        }
-
-        nicknameInput.addEventListener('input', loadSavedTokenForNick);
-
-        // Инициализация при открытии страницы
-        const lastNick = localStorage.getItem('sun_in_last_nick');
-        if (lastNick) {
-            nicknameInput.value = lastNick;
+    // Переключение режима
+    function updateMode() {
+        if (modeLogin.checked) {
+            currentMode = 'login';
+            tokenLabel.textContent = 'Пароль / Ключ:';
+            tokenInput.placeholder = 'Секретный ключ или пароль';
+            tokenHint.textContent = 'Для входа укажите пароль, заданный при регистрации.';
+            submitBtn.innerHTML = '<b>Далее &gt;</b>';
+            statusMessage.innerHTML = 'Режим: Вход. Введите имя пользователя и пароль.';
             loadSavedTokenForNick();
+        } else {
+            currentMode = 'register';
+            tokenLabel.textContent = 'Пароль (опц.):';
+            tokenInput.placeholder = 'Придумайте пароль или пусто для авто-ключа';
+            tokenHint.textContent = 'Если оставить пустым, сервер сам сгенерирует криптографический ключ.';
+            submitBtn.innerHTML = '<b>Установить &gt;</b>';
+            statusMessage.innerHTML = 'Режим: Регистрация. Введите имя пользователя и желаемый пароль.';
+            tokenInput.value = '';
+        }
+    }
+
+    modeLogin.addEventListener('change', updateMode);
+    modeRegister.addEventListener('change', updateMode);
+
+    // Показать / скрыть пароль
+    togglePwd.addEventListener('click', () => {
+        const isPwd = tokenInput.type === 'password';
+        tokenInput.type = isPwd ? 'text' : 'password';
+        togglePwd.textContent = isPwd ? 'Скрыть' : 'Показать';
+    });
+
+    cancelBtn.addEventListener('click', () => {
+        if (confirm('Вы уверены, что хотите прервать процесс установки/входа?')) {
+            window.location.reload();
+        }
+    });
+
+    helpBtn.addEventListener('click', () => {
+        alert('SUN_IN Setup Wizard\n\n1. Введите никнейм.\n2. Выберите режим "Вход" или "Регистрация".\n3. Нажмите "Далее >" для подключения к серверу.');
+    });
+
+    function loadSavedTokenForNick() {
+        if (currentMode !== 'login') return;
+        const nick = nicknameInput.value.trim().toLowerCase();
+        if (!nick) return;
+        const saved = localStorage.getItem('sun_in_token_' + nick);
+        if (saved) {
+            tokenInput.value = saved;
+        }
+    }
+
+    nicknameInput.addEventListener('input', loadSavedTokenForNick);
+
+    // Инициализация
+    const lastNick = localStorage.getItem('sun_in_last_nick');
+    if (lastNick) {
+        nicknameInput.value = lastNick;
+        loadSavedTokenForNick();
+    }
+    const savedServerUrl = localStorage.getItem('sun_in_server_url');
+    if (savedServerUrl) {
+        serverUrlInput.value = savedServerUrl;
+    }
+
+    // Отправка формы
+    authForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const nick = nicknameInput.value.trim();
+        const token = tokenInput.value.trim();
+        const serverUrl = serverUrlInput.value.trim();
+
+        if (!nick) {
+            statusMessage.innerHTML = '<font color="red"><b>Ошибка:</b> укажите имя пользователя.</font>';
+            return;
         }
 
-        const savedServerUrl = localStorage.getItem('sun_in_server_url');
-        if (savedServerUrl) {
-            serverUrlInput.value = savedServerUrl;
+        submitBtn.disabled = true;
+        statusMessage.innerHTML = 'Подключение к ' + serverUrl + '... Пожалуйста, подождите.';
+
+        if (client) {
+            try { client.disconnect(); } catch (_) {}
         }
 
-        // Обработка отправки формы
-        authForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            hideAlert();
+        client = new SunInClient(serverUrl, nick);
 
-            const nick = nicknameInput.value.trim();
-            const token = tokenInputField.value.trim();
-            const serverUrl = serverUrlInput.value.trim();
+        let connectionTimeout = setTimeout(() => {
+            submitBtn.disabled = false;
+            statusMessage.innerHTML = '<font color="red"><b>Таймаут:</b> не удалось подключиться к ' + serverUrl + '. Проверьте, запущен ли сервер.</font>';
+            if (client) client.disconnect();
+        }, 5000);
 
-            if (!nick) {
-                showAlert('error', 'Пожалуйста, укажите никнейм');
-                return;
-            }
-
-            setLoading(true);
-
-            if (client) {
-                try { client.disconnect(); } catch (_) {}
-            }
-
-            client = new SunInClient(serverUrl, nick);
-
-            let connectionTimeout = setTimeout(() => {
-                setLoading(false);
-                showAlert('error', `Не удалось подключиться к серверу ${serverUrl}. Убедитесь, что сервер запущен.`);
-                if (client) client.disconnect();
-            }, 5000);
-
-            client.on('open', () => {
-                clearTimeout(connectionTimeout);
-                // Отправляем запрос авторизации
-                client.authenticate(nick, token);
-            });
-
-            client.on('AUTH_SUCCESS', (pkt) => {
-                setLoading(false);
-                const currentUser = pkt.auth_success;
-
-                // Извлекаем выданный сервером токен
-                const tokenMatch = currentUser.message.match(/токен:\s*([^\s]+)/i);
-                const finalToken = tokenMatch ? tokenMatch[1] : (token || currentUser.user_id);
-
-                // Сохраняем сессию
-                localStorage.setItem('sun_in_last_nick', nick);
-                localStorage.setItem('sun_in_server_url', serverUrl);
-                localStorage.setItem('sun_in_token_' + nick.toLowerCase(), finalToken);
-                localStorage.setItem('sun_in_auth', JSON.stringify({
-                    nickname: currentUser.nickname,
-                    user_id: currentUser.user_id,
-                    token: finalToken,
-                    server_url: serverUrl,
-                    message: currentUser.message,
-                    logged_in: true
-                }));
-
-                if (currentMode === 'register' && tokenMatch) {
-                    // При регистрации показываем токен перед переходом
-                    const copyHtml = `
-                        <div style="margin-top: 8px;">Сохраните ваш персональный ключ:</div>
-                        <div class="token-display">
-                            <span id="generatedTokenText">${finalToken}</span>
-                            <button type="button" class="copy-btn" id="copyTokenBtn">Скопировать</button>
-                        </div>
-                        <div style="margin-top: 8px; font-size: 0.8rem; opacity: 0.9;">Переход в чат через 3 секунды...</div>
-                    `;
-                    showAlert('success', `✅ Аккаунт @${currentUser.nickname} успешно зарегистрирован!`, copyHtml);
-
-                    const copyBtn = document.getElementById('copyTokenBtn');
-                    if (copyBtn) {
-                        copyBtn.onclick = () => {
-                            navigator.clipboard.writeText(finalToken);
-                            copyBtn.textContent = 'Скопировано!';
-                            setTimeout(() => copyBtn.textContent = 'Скопировать', 2000);
-                        };
-                    }
-
-                    setTimeout(() => {
-                        window.location.href = 'index.html';
-                    }, 3000);
-                } else {
-                    showAlert('success', `✅ ${currentUser.message}. Переход в мессенджер...`);
-                    setTimeout(() => {
-                        window.location.href = 'index.html';
-                    }, 600);
-                }
-            });
-
-            client.on('AUTH_FAIL', (pkt) => {
-                setLoading(false);
-                const reason = pkt.auth_fail?.reason || 'Неверные данные авторизации';
-                showAlert('error', `❌ ${reason}`);
-                client.disconnect();
-            });
+        client.on('open', () => {
+            clearTimeout(connectionTimeout);
+            statusMessage.innerHTML = 'Связь установлена. Проверка подлинности...';
+            client.authenticate(nick, token);
         });
-    </script>
+
+        client.on('AUTH_SUCCESS', (pkt) => {
+            submitBtn.disabled = false;
+            const currentUser = pkt.auth_success;
+
+            const tokenMatch = currentUser.message.match(/токен:\s*([^\s]+)/i);
+            const finalToken = tokenMatch ? tokenMatch[1] : (token || currentUser.user_id);
+
+            localStorage.setItem('sun_in_last_nick', nick);
+            localStorage.setItem('sun_in_server_url', serverUrl);
+            localStorage.setItem('sun_in_token_' + nick.toLowerCase(), finalToken);
+            localStorage.setItem('sun_in_auth', JSON.stringify({
+                nickname: currentUser.nickname,
+                user_id: currentUser.user_id,
+                token: finalToken,
+                server_url: serverUrl,
+                message: currentUser.message,
+                logged_in: true
+            }));
+
+            if (currentMode === 'register' && tokenMatch) {
+                statusMessage.innerHTML = `
+                    <font color="green"><b>Успешно зарегистрирован!</b></font><br>
+                    Ваш персональный ключ: <b>${finalToken}</b><br>
+                    <small>Сохраните его. Переход в мессенджер через 3 секунды...</small>
+                `;
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 3000);
+            } else {
+                statusMessage.innerHTML = '<font color="green"><b>Авторизация успешна!</b></font> Переход в программу...';
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 600);
+            }
+        });
+
+        client.on('AUTH_FAIL', (pkt) => {
+            submitBtn.disabled = false;
+            const reason = pkt.auth_fail?.reason || 'Неверные данные авторизации';
+            statusMessage.innerHTML = '<font color="red"><b>Ошибка авторизации:</b> ' + reason + '</font>';
+            client.disconnect();
+        });
+    });
+</script>
+
 </body>
 </html>
