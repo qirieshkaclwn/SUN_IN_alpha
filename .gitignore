@@ -1,0 +1,29 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Keys and certificates (secrets)
+*.key
+*.pem
+server/private_ca.key
+
+# Environments & IDE
+.env
+.venv
+env/
+venv/
+.idea/
+.vscode/
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Markdown documentation
+*.md
+
+# Node dependencies
+node_modules/
+
