@@ -260,11 +260,34 @@
         });
 
         client.on('AUTH_FAIL', (pkt) => {
+            clearTimeout(timeoutId);
             submitBtn.disabled = false;
             const reason = pkt.auth_fail?.reason || 'Ошибка авторизации';
             statusMessage.innerHTML = `<span style="color:#ff5555;">Ошибка: ${reason}</span>`;
             client.disconnect();
         });
+
+        client.on('error', (err) => {
+            clearTimeout(timeoutId);
+            submitBtn.disabled = false;
+            let msg = 'Не удалось подключиться к серверу.';
+            if (window.location.protocol === 'https:' && serverUrl.startsWith('ws://')) {
+                msg += ' Браузер блокирует ws:// на https:// странице (Mixed Content).';
+            }
+            statusMessage.innerHTML = `<span style="color:#ff5555;">${msg}</span>`;
+        });
+
+        try {
+            await client.connect();
+        } catch (e) {
+            clearTimeout(timeoutId);
+            submitBtn.disabled = false;
+            let msg = 'Не удалось подключиться к серверу.';
+            if (window.location.protocol === 'https:' && serverUrl.startsWith('ws://')) {
+                msg += ' Браузер блокирует ws:// на https:// странице (Mixed Content).';
+            }
+            statusMessage.innerHTML = `<span style="color:#ff5555;">${msg}</span>`;
+        }
     });
 </script>
 
