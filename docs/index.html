@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>SUN_IN BIOS MESSENGER UTILITY</title>
+    <title>SUN_IN — Чат</title>
     <style>
         * {
             box-sizing: border-box;
@@ -13,48 +13,60 @@
             background-color: #0000aa;
             color: #ffffff;
             font-family: 'Courier New', Courier, monospace;
-            font-size: 13px;
-            padding: 10px;
-            user-select: none;
+            font-size: 14px;
+            padding: 16px;
         }
-        .bios-container {
-            max-width: 980px;
+        .container {
+            max-width: 960px;
             margin: 0 auto;
             border: 2px solid #55ffff;
-            padding: 4px;
+            padding: 12px;
             background-color: #0000aa;
         }
-        .header-box {
-            border: 1px solid #55ffff;
-            padding: 6px 10px;
-            margin-bottom: 6px;
-            text-align: center;
-        }
-        .header-title {
-            color: #ffff55;
-            font-weight: bold;
-            font-size: 15px;
-            letter-spacing: 1px;
-        }
-        .header-sub {
-            color: #55ffff;
-            font-size: 12px;
-            margin-top: 3px;
-        }
-        .info-bar {
-            border: 1px solid #55ffff;
-            padding: 5px 8px;
-            margin-bottom: 6px;
+        .header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background-color: #000088;
-            font-size: 12px;
+            border-bottom: 1px solid #55ffff;
+            padding-bottom: 10px;
+            margin-bottom: 10px;
         }
-        .bios-box {
-            border: 1px solid #55ffff;
-            padding: 6px;
+        .header-title {
+            color: #ffff55;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .btn {
             background-color: #0000aa;
+            color: #ffff55;
+            border: 1px solid #ffff55;
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: bold;
+            padding: 4px 10px;
+            cursor: pointer;
+        }
+        .btn:hover {
+            background-color: #ffff55;
+            color: #000000;
+        }
+        .btn:disabled {
+            color: #888888;
+            border-color: #888888;
+            cursor: default;
+            background-color: #0000aa;
+        }
+        table.layout {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        td.col-users {
+            width: 240px;
+            vertical-align: top;
+            padding-right: 10px;
+        }
+        td.col-chat {
+            vertical-align: top;
         }
         .box-title {
             color: #ffff55;
@@ -63,28 +75,28 @@
             border-bottom: 1px dashed #55ffff;
             padding-bottom: 2px;
         }
-        .terminal-screen {
+        .screen {
             background-color: #000055;
             border: 1px solid #55ffff;
-            font-family: 'Courier New', Courier, monospace;
+            font-family: inherit;
             font-size: 13px;
             color: #ffffff;
             padding: 8px;
             overflow-y: auto;
-            line-height: 1.35;
+            line-height: 1.4;
         }
-        .node-item {
+        .user-item {
             padding: 4px 6px;
             cursor: pointer;
-            border-bottom: 1px dotted #0000aa;
+            border-bottom: 1px dotted #000088;
             display: flex;
             justify-content: space-between;
         }
-        .node-item:hover {
+        .user-item:hover {
             background-color: #55ffff;
             color: #000000;
         }
-        .node-item.active {
+        .user-item.active {
             background-color: #ffff55;
             color: #000000;
             font-weight: bold;
@@ -93,8 +105,8 @@
             background-color: #000088;
             color: #ffff55;
             border: 1px solid #55ffff;
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 13px;
+            font-family: inherit;
+            font-size: 14px;
             font-weight: bold;
             padding: 5px 8px;
             width: 100%;
@@ -109,123 +121,62 @@
             color: #666666;
             border-color: #444488;
         }
-        .bios-btn {
-            background-color: #0000aa;
-            color: #ffff55;
-            border: 1px solid #ffff55;
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 12px;
-            font-weight: bold;
-            padding: 4px 10px;
-            cursor: pointer;
-            outline: none;
-        }
-        .bios-btn:hover, .bios-btn:focus {
-            background-color: #ffff55;
-            color: #000000;
-        }
-        .bios-btn:disabled {
-            color: #666666;
-            border-color: #666666;
-            cursor: default;
-            background-color: #0000aa;
-        }
-        .footer-help {
-            border: 1px solid #55ffff;
-            padding: 5px 8px;
-            margin-top: 6px;
-            font-size: 11px;
-            color: #aaaaaa;
-            display: flex;
-            justify-content: space-between;
-            background-color: #000088;
-        }
-        .footer-help b {
-            color: #ffff55;
-        }
     </style>
 </head>
 <body>
 
-<div class="bios-container">
-    <!-- Шапка BIOS Setup Utility -->
-    <div class="header-box">
-        <div class="header-title">ROM PCI/ISA BIOS (SUN-IN-2026)</div>
-        <div class="header-title">CMOS REAL-TIME COMMUNICATION CONTROLLER</div>
-        <div class="header-sub">ENCRYPTED NODE-TO-NODE PROTOCOL ACTIVE</div>
-    </div>
-
-    <!-- Информационная полоса -->
-    <div class="info-bar">
+<div class="container">
+    <!-- Шапка -->
+    <div class="header">
         <div>
-            OPERATOR: <b style="color: #ffff55;" id="headerUserBadge">@user</b>
+            <span class="header-title">SUN_IN</span> | 
+            Вы: <b id="headerUserBadge" style="color: #ffff55;">@user</b> | 
+            <span id="statusText">Подключение...</span>
         </div>
         <div>
-            LINK: <span id="statusText" style="color: #ffff55;">CONNECTING...</span>
-        </div>
-        <div>
-            <button type="button" class="bios-btn" id="refreshUsersBtn" disabled>[F5: REFRESH NODES]</button>
-            <button type="button" class="bios-btn" id="pingBtn" disabled>[F9: PING]</button>
-            <button type="button" class="bios-btn" id="logoutBtn">[ESC: EXIT]</button>
+            <button type="button" class="btn" id="refreshUsersBtn" disabled>[ Обновить ]</button>
+            <button type="button" class="btn" id="pingBtn" disabled>[ Пинг ]</button>
+            <button type="button" class="btn" id="logoutBtn">[ Выйти ]</button>
         </div>
     </div>
 
-    <!-- Основная сетка: Узлы сети (слева), Терминал передачи сообщений (справа) -->
-    <table width="100%" border="0" cellpadding="0" cellspacing="4">
-        <tr valign="top">
-            <!-- Список узлов (контактов) -->
-            <td width="260">
-                <div class="bios-box" style="height: 420px; display: flex; flex-direction: column;">
-                    <div class="box-title">NETWORK NODES (USERS)</div>
-                    <div id="dialogList" class="terminal-screen" style="flex: 1; padding: 2px;">
-                        <div style="color: #888888; padding: 6px;">POLLING ACTIVE NODES...</div>
-                    </div>
+    <!-- Основная сетка -->
+    <table class="layout">
+        <tr>
+            <!-- Список пользователей -->
+            <td class="col-users">
+                <div class="box-title">ПОЛЬЗОВАТЕЛИ</div>
+                <div id="dialogList" class="screen" style="height: 420px;">
+                    <div style="color: #aaaaaa; padding: 4px;">Загрузка...</div>
                 </div>
             </td>
 
-            <!-- Окно сеанса связи -->
-            <td>
-                <div class="bios-box" style="height: 420px; display: flex; flex-direction: column;">
-                    <div class="box-title" style="display: flex; justify-content: space-between;">
-                        <span id="activeDialogTitle">CHANNEL: [SELECT NODE FROM LEFT]</span>
-                        <span id="activeDialogStatus" style="color: #55ffff;">IDLE</span>
-                    </div>
-
-                    <!-- Лог передачи пакетов -->
-                    <div id="messages" class="terminal-screen" style="flex: 1; margin-bottom: 6px;">
-                        <div style="color: #55ffff;">[BIOS-INIT]: ATTEMPTING HANDSHAKE WITH REMOTE SOCKET...</div>
-                    </div>
-
-                    <!-- Ввод команды / сообщения -->
-                    <table width="100%" border="0" cellpadding="0" cellspacing="2">
-                        <tr>
-                            <td width="80" style="color: #ffff55; font-weight: bold;">PROMPT &gt;</td>
-                            <td>
-                                <input type="text" id="msgInput" placeholder="Enter transmission text..." disabled autocomplete="off">
-                            </td>
-                            <td width="100" align="right">
-                                <button type="button" id="sendBtn" class="bios-btn" style="width: 100%; padding: 5px 0;" disabled>[SEND]</button>
-                            </td>
-                        </tr>
-                    </table>
+            <!-- Чат -->
+            <td class="col-chat">
+                <div class="box-title" id="activeDialogTitle">ЧАТ: (выберите пользователя слева)</div>
+                <div id="messages" class="screen" style="height: 380px; margin-bottom: 8px;">
+                    <div style="color: #55ffff;">Подключение к серверу...</div>
                 </div>
+
+                <!-- Строка ввода -->
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr>
+                        <td style="padding-right: 8px;">
+                            <input type="text" id="msgInput" placeholder="Введите сообщение..." disabled autocomplete="off">
+                        </td>
+                        <td width="110">
+                            <button type="button" class="btn" id="sendBtn" style="width: 100%; padding: 6px 0;" disabled>[ ОТПРАВИТЬ ]</button>
+                        </td>
+                    </tr>
+                </table>
             </td>
         </tr>
     </table>
-
-    <!-- Подвал с горячими клавишами BIOS -->
-    <div class="footer-help">
-        <span><b>ESC</b>: Logoff/Exit</span>
-        <span><b>F5</b>: Refresh Nodes</span>
-        <span><b>F9</b>: Ping Server</span>
-        <span><b>ENTER</b>: Transmit</span>
-    </div>
 </div>
 
 <script type="module">
     import { SunInClient } from './sun_in_pure.js';
 
-    // 1. Проверка сохраненной сессии
     const rawAuth = localStorage.getItem('sun_in_auth');
     if (!rawAuth) {
         window.location.href = 'auth.html';
@@ -247,7 +198,6 @@
     let activeContact = null;
     let currentUser = null;
 
-    // Хранилище сообщений по контактам
     const dialogHistories = {};
 
     const statusText = document.getElementById('statusText');
@@ -257,7 +207,6 @@
     const pingBtn = document.getElementById('pingBtn');
     const dialogListEl = document.getElementById('dialogList');
     const activeDialogTitle = document.getElementById('activeDialogTitle');
-    const activeDialogStatus = document.getElementById('activeDialogStatus');
     const messagesDiv = document.getElementById('messages');
     const msgInput = document.getElementById('msgInput');
     const sendBtn = document.getElementById('sendBtn');
@@ -285,18 +234,18 @@
     function renderMessagesForActiveContact() {
         messagesDiv.innerHTML = '';
         if (!activeContact) {
-            appendLog('[BIOS]: SELECT A TARGET NODE FROM THE LEFT TABLE TO OPEN CHANNEL.', '#55ffff');
+            appendLog('Выберите контакт слева, чтобы начать диалог.', '#55ffff');
             return;
         }
 
         const history = dialogHistories[activeContact] || [];
         if (history.length === 0) {
-            appendLog(`[BIOS]: CHANNEL OPENED WITH @${activeContact}. TRANSMISSION LOG EMPTY.`, '#ffff55');
+            appendLog(`Диалог с @${activeContact}. Сообщений пока нет.`, '#ffff55');
             return;
         }
 
         history.forEach(m => {
-            const prefix = m.outgoing ? `[OUT -> @${m.to}]` : `[IN  <- @${m.from}]`;
+            const prefix = m.outgoing ? `[Вы -> @${m.to}]` : `[@${m.from}]`;
             const color = m.outgoing ? '#55ff55' : '#ffffff';
             appendLog(`${prefix}: ${m.text}`, color);
         });
@@ -304,18 +253,17 @@
 
     function setConnected(connected) {
         if (connected) {
-            statusText.innerHTML = '<span style="color:#55ff55; font-weight:bold;">ONLINE [LINK-OK]</span>';
+            statusText.innerHTML = '<span style="color:#55ff55; font-weight:bold;">В сети</span>';
             refreshUsersBtn.disabled = false;
             pingBtn.disabled = false;
             msgInput.disabled = !activeContact;
             sendBtn.disabled = !activeContact;
         } else {
-            statusText.innerHTML = '<span style="color:#ff5555; font-weight:bold;">OFFLINE [LINK-DEAD]</span>';
+            statusText.innerHTML = '<span style="color:#ff5555; font-weight:bold;">Отключен</span>';
             refreshUsersBtn.disabled = true;
             pingBtn.disabled = true;
             msgInput.disabled = true;
             sendBtn.disabled = true;
-            activeDialogStatus.textContent = 'DISCONNECTED';
         }
     }
 
@@ -324,19 +272,18 @@
         const contacts = users.filter(u => u !== (client?.nickname || authData.nickname));
 
         if (contacts.length === 0) {
-            dialogListEl.innerHTML = '<div style="color: #aaaaaa; padding: 6px;">NO OTHER NODES ONLINE</div>';
+            dialogListEl.innerHTML = '<div style="color: #aaaaaa; padding: 4px;">Никого нет в сети</div>';
             return;
         }
 
         contacts.forEach(user => {
             const div = document.createElement('div');
-            div.className = `node-item ${user === activeContact ? 'active' : ''}`;
-            div.innerHTML = `<span>&gt; @${user}</span><span style="color:#ffff55;">[ONLINE]</span>`;
+            div.className = `user-item ${user === activeContact ? 'active' : ''}`;
+            div.innerHTML = `<span>@${user}</span><span style="color:#ffff55;">[онлайн]</span>`;
             div.onclick = () => {
                 activeContact = user;
-                activeDialogTitle.textContent = `CHANNEL: @${user}`;
-                activeDialogStatus.textContent = `LINK-ACTIVE`;
-                document.querySelectorAll('.node-item').forEach(el => el.classList.remove('active'));
+                activeDialogTitle.textContent = `ЧАТ: @${user}`;
+                document.querySelectorAll('.user-item').forEach(el => el.classList.remove('active'));
                 div.classList.add('active');
                 msgInput.disabled = false;
                 sendBtn.disabled = false;
@@ -352,23 +299,22 @@
         client = new SunInClient(serverUrl, authData.nickname);
 
         client.on('open', () => {
-            appendLog(`[BIOS]: SOCKET ESTABLISHED WITH ${serverUrl}.`, '#55ffff');
-            appendLog(`[BIOS]: AUTHENTICATING AS @${authData.nickname}...`, '#55ffff');
+            appendLog(`Связь с сервером установлена. Вход как @${authData.nickname}...`, '#55ffff');
             client.authenticate(authData.nickname, authData.token || '');
         });
 
         client.on('AUTH_SUCCESS', (pkt) => {
             currentUser = pkt.auth_success;
             setConnected(true);
-            headerUserBadge.textContent = `@${currentUser.nickname} [${currentUser.user_id}]`;
-            appendLog(`[OK]: ${currentUser.message}. SYSTEM OPERATIONAL.`, '#55ff55');
+            headerUserBadge.textContent = `@${currentUser.nickname}`;
+            appendLog(`Успешный вход: ${currentUser.message}.`, '#55ff55');
             client.requestUsers();
         });
 
         client.on('AUTH_FAIL', (pkt) => {
-            const reason = pkt.auth_fail?.reason || 'SESSION INVALID';
+            const reason = pkt.auth_fail?.reason || 'Ошибка сессии';
             setConnected(false);
-            alert(`[CRITICAL]: AUTHENTICATION FAILURE (${reason}). REDIRECTING TO SETUP.`);
+            alert(`Ошибка авторизации: ${reason}.`);
             logoff();
         });
 
@@ -396,47 +342,45 @@
             });
 
             if (activeContact === otherParty) {
-                const prefix = isMe ? `[OUT -> @${md.to_user}]` : `[IN  <- @${md.from_user}]`;
+                const prefix = isMe ? `[Вы -> @${md.to_user}]` : `[@${md.from_user}]`;
                 const color = isMe ? '#55ff55' : '#ffffff';
                 appendLog(`${prefix}: ${md.text}`, color);
             }
         });
 
         client.on('PONG', (pkt) => {
-            const sender = pkt.pong?.sender || 'HOST';
-            appendLog(`[PONG]: ECHO RECEIVED FROM [${sender}] (SEQ=${pkt.seq_id})`, '#ffff55');
+            appendLog(`[Понг] Ответ от сервера получен (seq=${pkt.seq_id})`, '#ffff55');
         });
 
         client.on('close', () => {
             setConnected(false);
-            appendLog('[HALT]: SOCKET CONNECTION CLOSED BY REMOTE PEER.', '#ff5555');
+            appendLog('Соединение с сервером закрыто.', '#ff5555');
         });
 
         client.on('error', () => {
             setConnected(false);
-            appendLog('[FATAL]: SOCKET TRANSMISSION ERROR DETECTED.', '#ff5555');
+            appendLog('Ошибка связи с сервером.', '#ff5555');
         });
 
         try {
-            appendLog(`[BIOS]: OPENING TCP/WS CONNECTION TO ${serverUrl}...`, '#55ffff');
             await client.connect();
         } catch (e) {
             setConnected(false);
-            appendLog(`[FAIL]: COULD NOT OPEN SOCKET TO ${serverUrl}.`, '#ff5555');
+            appendLog(`Не удалось подключиться к ${serverUrl}.`, '#ff5555');
         }
     }
 
     refreshUsersBtn.addEventListener('click', () => {
         if (client) {
             client.requestUsers();
-            appendLog('[BIOS]: REQUESTING ACTIVE NODE DIRECTORY...', '#aaaaaa');
+            appendLog('Запрос списка пользователей...', '#aaaaaa');
         }
     });
 
     pingBtn.addEventListener('click', () => {
         if (client) {
             const seq = client.ping();
-            appendLog(`[BIOS]: TRANSMITTING PING PACKET (SEQ=${seq})...`, '#aaaaaa');
+            appendLog(`Отправлен пинг на сервер (seq=${seq})...`, '#aaaaaa');
         }
     });
 
@@ -453,23 +397,6 @@
         if (e.key === 'Enter') sendMessage();
     });
 
-    // Горячие клавиши BIOS: F5, F9, Escape
-    window.addEventListener('keydown', (e) => {
-        if (e.key === 'F5') {
-            e.preventDefault();
-            if (client && !refreshUsersBtn.disabled) refreshUsersBtn.click();
-        } else if (e.key === 'F9') {
-            e.preventDefault();
-            if (client && !pingBtn.disabled) pingBtn.click();
-        } else if (e.key === 'Escape') {
-            e.preventDefault();
-            if (confirm('TERMINATE SESSION AND RETURN TO SETUP UTILITY?')) {
-                logoff();
-            }
-        }
-    });
-
-    // Старт
     initConnection();
 </script>
 

@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>SUN_IN BIOS SETUP UTILITY</title>
+    <title>Вход — SUN_IN</title>
     <style>
         * {
             box-sizing: border-box;
@@ -14,65 +14,40 @@
             color: #ffffff;
             font-family: 'Courier New', Courier, monospace;
             font-size: 14px;
-            padding: 12px;
-            user-select: none;
+            padding: 20px;
         }
-        .bios-container {
-            max-width: 860px;
-            margin: 0 auto;
+        .box {
+            max-width: 600px;
+            margin: 40px auto;
             border: 2px solid #55ffff;
-            padding: 4px;
+            padding: 16px;
             background-color: #0000aa;
         }
-        .header-box {
-            border: 1px solid #55ffff;
-            padding: 6px 10px;
-            margin-bottom: 8px;
+        .title {
+            color: #ffff55;
+            font-size: 16px;
+            font-weight: bold;
             text-align: center;
+            margin-bottom: 16px;
+            border-bottom: 1px solid #55ffff;
+            padding-bottom: 8px;
         }
-        .header-title {
-            color: #ffff55;
-            font-weight: bold;
-            font-size: 15px;
-            letter-spacing: 1px;
-        }
-        .header-sub {
-            color: #55ffff;
-            font-size: 12px;
-            margin-top: 2px;
-        }
-        .section-box {
-            border: 1px solid #55ffff;
-            padding: 10px;
-            margin-bottom: 8px;
-        }
-        .section-title {
-            color: #ffff55;
-            font-weight: bold;
-            margin-bottom: 8px;
-            border-bottom: 1px dashed #55ffff;
-            padding-bottom: 3px;
-        }
-        table.bios-form {
+        table {
             width: 100%;
             border-collapse: collapse;
+            margin-bottom: 12px;
         }
-        table.bios-form td {
-            padding: 5px 4px;
+        td {
+            padding: 6px 4px;
             vertical-align: middle;
-        }
-        .field-label {
-            color: #ffffff;
-            width: 220px;
         }
         input[type="text"], input[type="password"] {
             background-color: #000088;
             color: #ffff55;
             border: 1px solid #55ffff;
-            font-family: 'Courier New', Courier, monospace;
+            font-family: inherit;
             font-size: 14px;
-            font-weight: bold;
-            padding: 3px 8px;
+            padding: 4px 8px;
             width: 100%;
             outline: none;
         }
@@ -80,148 +55,83 @@
             background-color: #55ffff;
             color: #000000;
         }
-        input[type="radio"] {
-            accent-color: #ffff55;
-            cursor: pointer;
-        }
-        .bios-btn {
+        .btn {
             background-color: #0000aa;
             color: #ffff55;
             border: 1px solid #ffff55;
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 13px;
+            font-family: inherit;
+            font-size: 14px;
             font-weight: bold;
-            padding: 4px 12px;
+            padding: 6px 16px;
             cursor: pointer;
-            outline: none;
-            display: inline-block;
         }
-        .bios-btn:hover, .bios-btn:focus {
+        .btn:hover {
             background-color: #ffff55;
             color: #000000;
         }
-        .bios-btn:disabled {
+        .btn:disabled {
             color: #888888;
             border-color: #888888;
             cursor: default;
             background-color: #0000aa;
         }
-        .status-display {
+        .status {
             background-color: #000066;
             border: 1px solid #55ffff;
-            padding: 8px 10px;
-            min-height: 48px;
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 13px;
+            padding: 8px;
+            min-height: 38px;
+            margin-bottom: 16px;
             color: #ffffff;
-            line-height: 1.4;
-        }
-        .footer-help {
-            border: 1px solid #55ffff;
-            padding: 6px 10px;
-            font-size: 12px;
-            color: #aaaaaa;
-            display: flex;
-            justify-content: space-between;
-            background-color: #000088;
-        }
-        .footer-help b {
-            color: #ffff55;
         }
     </style>
 </head>
 <body>
 
-<div class="bios-container">
-    <!-- Верхний заголовок Award / AMI BIOS -->
-    <div class="header-box">
-        <div class="header-title">ROM PCI/ISA BIOS (SUN-IN-2026)</div>
-        <div class="header-title">SECURITY &amp; AUTHENTICATION SETUP UTILITY</div>
-        <div class="header-sub">SUN_IN CORPORATION, ALL RIGHTS RESERVED</div>
-    </div>
+<div class="box">
+    <div class="title">АВТОРИЗАЦИЯ SUN_IN</div>
 
     <form id="authForm" autocomplete="off">
-        <!-- Выбор режима: Login / Register -->
-        <div class="section-box">
-            <div class="section-title">OPERATION MODE SELECT</div>
-            <table class="bios-form">
-                <tr>
-                    <td width="50%">
-                        <label style="cursor: pointer;">
-                            <input type="radio" name="authMode" id="modeLogin" value="login" checked>
-                            <span style="color: #ffffff;">[•] <b>EXISTING USER (LOGIN)</b></span>
-                        </label>
-                    </td>
-                    <td width="50%">
-                        <label style="cursor: pointer;">
-                            <input type="radio" name="authMode" id="modeRegister" value="register">
-                            <span style="color: #ffffff;">[•] <b>NEW USER (REGISTER)</b></span>
-                        </label>
-                    </td>
-                </tr>
-            </table>
+        <table>
+            <tr>
+                <td colspan="2" style="padding-bottom: 10px;">
+                    <label style="cursor: pointer; margin-right: 20px;">
+                        <input type="radio" name="authMode" id="modeLogin" value="login" checked>
+                        <b>Вход</b>
+                    </label>
+                    <label style="cursor: pointer;">
+                        <input type="radio" name="authMode" id="modeRegister" value="register">
+                        <b>Регистрация</b>
+                    </label>
+                </td>
+            </tr>
+            <tr>
+                <td width="130">Никнейм:</td>
+                <td>
+                    <input type="text" id="nickname" placeholder="имя пользователя" required minlength="3" maxlength="32">
+                </td>
+            </tr>
+            <tr>
+                <td id="tokenLabel">Пароль / ключ:</td>
+                <td>
+                    <input type="password" id="token" placeholder="введите пароль или ключ">
+                </td>
+            </tr>
+            <tr>
+                <td>Сервер:</td>
+                <td>
+                    <input type="text" id="serverUrl" value="ws://127.0.0.1:8765">
+                </td>
+            </tr>
+        </table>
+
+        <div id="statusMessage" class="status">
+            Введите никнейм и нажмите [Войти].
         </div>
 
-        <!-- Параметры учетной записи -->
-        <div class="section-box">
-            <div class="section-title">USER CREDENTIAL CONFIGURATION</div>
-            <table class="bios-form">
-                <tr>
-                    <td class="field-label">User Nickname ........:</td>
-                    <td>
-                        <input type="text" id="nickname" placeholder="username" required minlength="3" maxlength="32">
-                    </td>
-                </tr>
-                <tr>
-                    <td class="field-label" id="tokenLabel">Password / Key ......:</td>
-                    <td>
-                        <table style="width: 100%; border-collapse: collapse;">
-                            <tr>
-                                <td>
-                                    <input type="password" id="token" placeholder="Enter password or key">
-                                </td>
-                                <td width="110" style="padding-left: 6px;">
-                                    <button type="button" class="bios-btn" id="togglePwd" style="width: 100%;">[SHOW]</button>
-                                </td>
-                            </tr>
-                        </table>
-                    </td>
-                </tr>
-                <tr>
-                    <td class="field-label">Server Socket URI ....:</td>
-                    <td>
-                        <input type="text" id="serverUrl" value="ws://127.0.0.1:8765">
-                    </td>
-                </tr>
-            </table>
-        </div>
-
-        <!-- Состояние и логи -->
-        <div class="section-box">
-            <div class="section-title">POST DIAGNOSTIC / STATUS LOG</div>
-            <div id="statusMessage" class="status-display">
-                SYSTEM READY. SELECT MODE, ENTER NICKNAME AND PRESS [ENTER: LOGON].
-            </div>
-        </div>
-
-        <!-- Кнопки управления -->
-        <div style="text-align: center; margin: 10px 0;">
-            <button type="submit" class="bios-btn" id="submitBtn" style="padding: 6px 24px; font-size: 14px;">
-                [ ENTER : EXECUTE LOGON ]
-            </button>
-            <button type="button" class="bios-btn" id="resetBtn" style="padding: 6px 18px; margin-left: 8px;">
-                [ ESC : RESET ]
-            </button>
+        <div style="text-align: center;">
+            <button type="submit" class="btn" id="submitBtn">[ ВОЙТИ ]</button>
         </div>
     </form>
-
-    <!-- Подвал в стиле подсказок BIOS -->
-    <div class="footer-help">
-        <span><b>ESC</b>: Abort</span>
-        <span><b>TAB</b>: Next Item</span>
-        <span><b>ENTER</b>: Execute</span>
-        <span><b>F10</b>: Save &amp; Exit</span>
-    </div>
 </div>
 
 <script type="module">
@@ -239,41 +149,27 @@
     const serverUrlInput = document.getElementById('serverUrl');
     const statusMessage = document.getElementById('statusMessage');
     const submitBtn = document.getElementById('submitBtn');
-    const togglePwd = document.getElementById('togglePwd');
-    const resetBtn = document.getElementById('resetBtn');
 
     function updateMode() {
         if (modeLogin.checked) {
             currentMode = 'login';
-            tokenLabel.textContent = 'Password / Key ......:';
-            tokenInput.placeholder = 'Enter password or secret token';
-            submitBtn.textContent = '[ ENTER : EXECUTE LOGON ]';
-            statusMessage.innerHTML = 'MODE: LOGIN. ENTER NICKNAME AND PASSWORD, THEN PRESS [ENTER].';
+            tokenLabel.textContent = 'Пароль / ключ:';
+            tokenInput.placeholder = 'введите пароль или ключ';
+            submitBtn.textContent = '[ ВОЙТИ ]';
+            statusMessage.textContent = 'Режим: вход. Введите данные.';
             loadSavedToken();
         } else {
             currentMode = 'register';
-            tokenLabel.textContent = 'Password (Optional) .:';
-            tokenInput.placeholder = 'Enter password or leave blank for auto-key';
-            submitBtn.textContent = '[ ENTER : EXECUTE REGISTER ]';
-            statusMessage.innerHTML = 'MODE: REGISTER. LEAVE PASSWORD EMPTY TO AUTO-GENERATE A SECURE KEY.';
+            tokenLabel.textContent = 'Пароль (опц.):';
+            tokenInput.placeholder = 'пароль (или оставьте пустым)';
+            submitBtn.textContent = '[ ЗАРЕГИСТРИРОВАТЬСЯ ]';
+            statusMessage.textContent = 'Режим: регистрация. Заполните никнейм.';
             tokenInput.value = '';
         }
     }
 
     modeLogin.addEventListener('change', updateMode);
     modeRegister.addEventListener('change', updateMode);
-
-    togglePwd.addEventListener('click', () => {
-        const isPwd = tokenInput.type === 'password';
-        tokenInput.type = isPwd ? 'text' : 'password';
-        togglePwd.textContent = isPwd ? '[HIDE]' : '[SHOW]';
-    });
-
-    resetBtn.addEventListener('click', () => {
-        nicknameInput.value = '';
-        tokenInput.value = '';
-        statusMessage.textContent = 'FIELDS CLEARED. READY.';
-    });
 
     function loadSavedToken() {
         if (currentMode !== 'login') return;
@@ -285,7 +181,6 @@
 
     nicknameInput.addEventListener('input', loadSavedToken);
 
-    // Восстановление прошлых данных
     const lastNick = localStorage.getItem('sun_in_last_nick');
     if (lastNick) {
         nicknameInput.value = lastNick;
@@ -304,12 +199,12 @@
         const serverUrl = serverUrlInput.value.trim();
 
         if (!nick) {
-            statusMessage.innerHTML = '<span style="color:#ff5555;">[ERROR]: SPECIFY VALID NICKNAME.</span>';
+            statusMessage.innerHTML = '<span style="color:#ff5555;">Укажите никнейм.</span>';
             return;
         }
 
         submitBtn.disabled = true;
-        statusMessage.innerHTML = `CONNECTING TO HOST: <span style="color:#ffff55;">${serverUrl}</span>... STANDBY.`;
+        statusMessage.textContent = 'Подключение к серверу...';
 
         if (client) {
             try { client.disconnect(); } catch (_) {}
@@ -319,13 +214,13 @@
 
         let timeoutId = setTimeout(() => {
             submitBtn.disabled = false;
-            statusMessage.innerHTML = `<span style="color:#ff5555;">[FATAL]: CONNECTION TIMEOUT TO ${serverUrl}. IS SERVER ONLINE?</span>`;
+            statusMessage.innerHTML = '<span style="color:#ff5555;">Не удалось подключиться к серверу.</span>';
             if (client) client.disconnect();
         }, 5000);
 
         client.on('open', () => {
             clearTimeout(timeoutId);
-            statusMessage.innerHTML = 'SOCKET CONNECTED. PERFORMING AUTHENTICATION PROOF...';
+            statusMessage.textContent = 'Соединение установлено. Проверка...';
             client.authenticate(nick, token);
         });
 
@@ -350,25 +245,24 @@
 
             if (currentMode === 'register' && tokenMatch) {
                 statusMessage.innerHTML = `
-                    <span style="color:#55ff55;">[OK]: REGISTRATION SUCCESSFUL FOR @${currentUser.nickname}!</span><br>
-                    ASSIGNED KEY: <b style="color:#ffff55;">${finalToken}</b><br>
-                    <span style="color:#55ffff;">BOOTING MESSENGER IN 3 SECONDS...</span>
+                    <span style="color:#55ff55;">Регистрация успешна!</span><br>
+                    Ваш ключ: <b style="color:#ffff55;">${finalToken}</b> (сохраните его)
                 `;
                 setTimeout(() => {
                     window.location.href = 'index.html';
                 }, 3000);
             } else {
-                statusMessage.innerHTML = `<span style="color:#55ff55;">[OK]: AUTHENTICATION GRANTED. BOOTING SESSION...</span>`;
+                statusMessage.innerHTML = '<span style="color:#55ff55;">Успешный вход. Переход...</span>';
                 setTimeout(() => {
                     window.location.href = 'index.html';
-                }, 600);
+                }, 500);
             }
         });
 
         client.on('AUTH_FAIL', (pkt) => {
             submitBtn.disabled = false;
-            const reason = pkt.auth_fail?.reason || 'CREDENTIALS REJECTED';
-            statusMessage.innerHTML = `<span style="color:#ff5555;">[ERROR]: AUTH_FAIL — ${reason}</span>`;
+            const reason = pkt.auth_fail?.reason || 'Ошибка авторизации';
+            statusMessage.innerHTML = `<span style="color:#ff5555;">Ошибка: ${reason}</span>`;
             client.disconnect();
         });
     });
