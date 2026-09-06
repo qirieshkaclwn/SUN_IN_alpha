@@ -1,0 +1,132 @@
+syntax = "proto3";
+
+package sun_in;
+
+enum PacketType {
+    PACKET_TYPE_UNSPECIFIED = 0;
+    PING = 1;
+    PONG = 2;
+    AUTH_INIT = 3;
+    AUTH_CHALLENGE = 4;
+    AUTH_PROOF = 5;
+    AUTH_SUCCESS = 6;
+    AUTH_FAIL = 7;
+    USER_LIST_REQ = 8;
+    USER_LIST_RESP = 9;
+    MSG_DIRECT = 10;
+    MSG_ACK = 11;
+    CHAT_MSG = 12;
+    CHAT_LIST_REQ = 13;
+    CHAT_LIST_RESP = 14;
+    CHAT_JOIN_REQ = 15;
+    CHAT_JOIN_RESP = 16;
+    ERROR = 20;
+}
+
+message Ping {
+    string sender = 1;
+}
+
+message Pong {
+    string sender = 1;
+}
+
+message AuthInit {
+    string nickname = 1;
+    string token = 2;
+}
+
+message AuthChallenge {
+    bytes nonce = 1;
+}
+
+message AuthProof {
+    bytes proof = 1;
+}
+
+message AuthSuccess {
+    string user_id = 1;
+    string nickname = 2;
+    string message = 3;
+}
+
+message AuthFail {
+    string reason = 1;
+}
+
+message UserListReq {}
+
+message UserListResp {
+    repeated string users = 1;
+}
+
+message MsgDirect {
+    string from_user = 1;
+    string to_user = 2;
+    string text = 3;
+}
+
+message MsgAck {
+    uint64 msg_seq_id = 1;
+    bool delivered = 2;
+}
+
+message ChatInfo {
+    string chat_id = 1;
+    string name = 2;
+    uint32 member_count = 3;
+}
+
+message ChatListReq {}
+
+message ChatListResp {
+    repeated ChatInfo chats = 1;
+}
+
+message ChatJoinReq {
+    string chat_id = 1;
+}
+
+message ChatJoinResp {
+    string chat_id = 1;
+    bool success = 2;
+    string message = 3;
+}
+
+message ChatMsg {
+    string chat_id = 1;
+    string from_user = 2;
+    string text = 3;
+}
+
+message ErrorMsg {
+    uint32 code = 1;
+    string message = 2;
+}
+
+message Packet {
+    uint32 version = 1;
+    uint64 seq_id = 2;
+    uint64 timestamp = 3;
+    PacketType type = 4;
+
+    oneof payload {
+        Ping ping = 10;
+        Pong pong = 11;
+        AuthInit auth_init = 12;
+        AuthChallenge auth_challenge = 13;
+        AuthProof auth_proof = 14;
+        AuthSuccess auth_success = 15;
+        AuthFail auth_fail = 16;
+        UserListReq user_list_req = 17;
+        UserListResp user_list_resp = 18;
+        MsgDirect msg_direct = 19;
+        MsgAck msg_ack = 20;
+        ChatMsg chat_msg = 21;
+        ChatListReq chat_list_req = 22;
+        ChatListResp chat_list_resp = 23;
+        ChatJoinReq chat_join_req = 24;
+        ChatJoinResp chat_join_resp = 25;
+        ErrorMsg error = 26;
+    }
+}
