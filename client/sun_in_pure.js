@@ -328,7 +328,7 @@ export function decodePacket(buffer) {
 }
 
 export class SunInClient {
-    constructor(url = 'ws://127.0.0.1:8765', nickname = 'web_user') {
+    constructor(url = 'ws://127.0.0.1:8888', nickname = 'web_user') {
         this.url = url;
         this.nickname = nickname;
         this.ws = null;

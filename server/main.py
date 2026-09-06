@@ -238,7 +238,7 @@ async def handle_websocket(websocket):
 async def main():
     parser = argparse.ArgumentParser(description="SUN_IN Server (WebSocket/Protobuf)")
     parser.add_argument("--host", default="0.0.0.0", help="Хост для прослушивания (по умолчанию 0.0.0.0)")
-    parser.add_argument("--port", type=int, default=8765, help="Порт (по умолчанию 8765)")
+    parser.add_argument("--port", type=int, default=8888, help="Порт (по умолчанию 8888)")
     args = parser.parse_args()
 
     async with websockets.serve(handle_websocket, args.host, args.port):

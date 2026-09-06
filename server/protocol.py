@@ -95,6 +95,12 @@ def create_auth_fail(reason: str, seq_id: int = 0) -> Packet:
     return pkt
 
 
+def create_user_list_req(seq_id: int = 0) -> Packet:
+    """Создает запрос на получение списка пользователей."""
+    pkt = create_packet(PacketType.USER_LIST_REQ, seq_id=seq_id)
+    return pkt
+
+
 def create_user_list_resp(users: list, seq_id: int = 0) -> Packet:
     """Создает ответ со списком пользователей."""
     pkt = create_packet(PacketType.USER_LIST_RESP, seq_id=seq_id)

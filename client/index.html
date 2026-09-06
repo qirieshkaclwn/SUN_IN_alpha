@@ -295,7 +295,7 @@
     }
 
     async function initConnection() {
-        const serverUrl = authData.server_url || 'ws://127.0.0.1:8765';
+        const serverUrl = authData.server_url || 'ws://127.0.0.1:8888';
         client = new SunInClient(serverUrl, authData.nickname);
 
         client.on('open', () => {
