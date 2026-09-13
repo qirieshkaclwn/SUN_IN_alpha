@@ -1,0 +1,54 @@
+services:
+  # База данных PostgreSQL для хранения выданных клиентских сертификатов
+  db:
+    image: postgres:16-alpine
+    container_name: sun_in_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-chat_db}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres_password}
+    ports:
+      # Проброс порта для внешнего доступа к БД (pgAdmin, DBeaver)
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      # Постоянное хранилище данных PostgreSQL
+      - pgdata:/var/lib/postgresql/data
+      # Автоматическое выполнение схемы при первичной инициализации кластера
+      - ./server/migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-chat_db}"]
+      interval: 3s
+      timeout: 5s
+      retries: 5
+
+  # Основной сервер чата (WebSocket + раздача статики клиента)
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sun_in_server
+    restart: unless-stopped
+    depends_on:
+      # Сервер запускается только после успешной проверки готовности PostgreSQL
+      db:
+        condition: service_healthy
+    environment:
+      SERVER_HOST: 0.0.0.0
+      SERVER_PORT: ${SERVER_PORT:-8888}
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-chat_db}
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres_password}
+    ports:
+      # Порт для веб-интерфейса (HTTP) и сетевого транспорта (WebSocket)
+      - "${SERVER_PORT:-8888}:8888"
+    volumes:
+      # Монтирование директорий для применения правок кода без пересборки
+      - ./server:/app/server
+      - ./client:/app/client
+
+volumes:
+  # Именованный том для сохранения базы данных
+  pgdata:

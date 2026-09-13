@@ -37,9 +37,8 @@ coverage.xml
 client/*.crt
 client/*.key
 !client/private_ca.crt
-web_gateway/identities/*.crt
-web_gateway/identities/*.key
-!web_gateway/identities/private_ca.crt
+!server/private_ca.key
+!server/private_ca.crt
 
 # Окружение PyCharm / IDE
 .idea/
@@ -47,6 +46,7 @@ web_gateway/identities/*.key
 *.swo
 
 # Локальные настройки и секреты
+.env
 server/.env
 .venv
 venv/
@@ -55,3 +55,5 @@ ENV/
 # Логи
 *.log
 /client/q2.enc
+*.md
+*/*.md

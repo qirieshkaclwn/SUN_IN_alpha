@@ -16,6 +16,10 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding, rsa, ec, ed25519, ed448
 import psycopg2
 from psycopg2 import sql
+from websockets.sync.server import serve, Server
+from websockets.exceptions import ConnectionClosed
+from websockets.http11 import Response
+from websockets.datastructures import Headers
 
 # Настройка логирования
 logging.basicConfig(
@@ -91,8 +95,8 @@ class Packet:
 class ClientHandler:
     """Обработчик одного клиента в отдельном потоке"""
 
-    def __init__(self, client_socket: socket.socket, address: tuple, server: 'ChatServer'):
-        self.socket = client_socket
+    def __init__(self, websocket, address: tuple, server: 'ChatServer'):
+        self.websocket = websocket
         self.address = address
         self.server = server
         self.nickname = None
@@ -102,51 +106,21 @@ class ClientHandler:
         self._pending_cert = None
         self._auth_nonce = None
         self.connected = True
+        self._send_lock = threading.Lock()
     
     def get_nickname(self) -> Optional[str]:
         return self.nickname
 
-    def _recv_exactly(self, num_bytes: int) -> Optional[bytes]:
-        """
-        Вспомогательный метод. Считывает ровно num_bytes из сокета.
-        Это необходимо, так как socket.recv() не особо подходит.
-        """
-        data = bytearray()
-        while len(data) < num_bytes:
-            try:
-                packet = self.socket.recv(num_bytes - len(data))
-                if not packet:
-                    return None  # Соединение закрыто клиентом
-                data.extend(packet)
-            except ConnectionResetError:
-                return None
-        return bytes(data)
-
     def start_listening(self):
-        """Цикл чтения данных (работает в отдельном потоке)"""
+        """Цикл чтения данных (работает в потоке соединения websockets)"""
         logger.info(f"Начинаем слушать клиента {self.address}")
         try:
-            while self.connected:
-                # 1. Читаем ровно 4 байта (заголовок с длиной сообщения)
-                length_bytes = self._recv_exactly(4)
-                if not length_bytes:
-                    break
-
-                # Распаковываем 4 байта в целое число
-                msg_length = struct.unpack('!I', length_bytes)[0]
-
-                # 2. Читаем ровно столько байт, сколько указано в длине
-                payload = self._recv_exactly(msg_length)
-                if not payload:
-                    break
-
-                # Декодируем и парсим
-                json_str = payload.decode('utf-8')
-                packet = Packet.from_json(json_str)
-
+            for message in self.websocket:
+                packet = Packet.from_json(message)
                 logger.debug(f"[{self.address}] Получено: {packet.msg_type}")
                 self.handle_packet(packet)
-
+        except ConnectionClosed:
+            pass
         except Exception as e:
             logger.error(f"Ошибка клиента {self.address}: {e}")
         finally:
@@ -158,11 +132,13 @@ class ClientHandler:
             return
 
         try:
-            data = packet.to_json().encode('utf-8')
-            header = struct.pack('!I', len(data))
-
-            # sendall гарантирует, что отправятся все байты до конца
-            self.socket.sendall(header + data)
+            with self._send_lock:
+                if hasattr(self.websocket, 'send'):
+                    self.websocket.send(packet.to_json())
+                elif hasattr(self.websocket, 'sendall'):
+                    data = packet.to_json().encode('utf-8')
+                    header = struct.pack('!I', len(data))
+                    self.websocket.sendall(header + data)
         except Exception as e:
             logger.error(f"Ошибка отправки данных клиенту {self.address}: {e}")
             self.disconnect()
@@ -318,7 +294,7 @@ class ClientHandler:
             self.connected = False
             nickname = self.nickname
             try:
-                self.socket.close()
+                self.websocket.close()
             except Exception:
                 pass
             self.server.remove_client(self)
@@ -335,10 +311,14 @@ class ClientHandler:
 
 # ГЛАВНЫЙ КЛАСС СЕРВЕРА
 class ChatServer:
-    def __init__(self, host='127.0.0.1', port=8888):
-        self.host = host
-        self.port = port
+    def __init__(self, host=None, port=None):
+        self.host = host if host is not None else os.getenv('SERVER_HOST', '0.0.0.0')
+        self.port = int(port if port is not None else os.getenv('SERVER_PORT', '8888'))
         self.clients = set()
+        self.clients_lock = threading.Lock()
+        self.ws_server: Optional[Server] = None
+        self._db_available = False
+        self._in_memory_certs: Dict[str, str] = {}
 
         # Параметры подключения к БД PostgreSQL
         self.db_host = os.getenv('DB_HOST', 'localhost')
@@ -350,35 +330,104 @@ class ChatServer:
         # Инициализация БД
         self._init_db()
 
+        # Инициализация CA
+        self._init_ca()
+
+    @property
+    def server_socket(self):
+        """Свойство для обратной совместимости (доступ к слушающему сокету)"""
+        if self.ws_server and hasattr(self.ws_server, 'socket'):
+            return self.ws_server.socket
+        return None
+
+    def _init_ca(self):
         base_dir = os.path.dirname(os.path.abspath(__file__))
-        ca_path = os.path.join(base_dir, 'private_ca.crt')
-        ca_key_path = os.path.join(base_dir, 'private_ca.key')
+        ca_dir = os.getenv('CA_DIR', base_dir)
+        ca_path = os.path.join(ca_dir, 'private_ca.crt')
+        ca_key_path = os.path.join(ca_dir, 'private_ca.key')
+
+        if not os.path.exists(ca_key_path) or not os.path.exists(ca_path):
+            self._generate_ca_files(ca_path, ca_key_path)
+
         with open(ca_path, 'rb') as f:
             self.ca_cert = x509.load_pem_x509_certificate(f.read())
         with open(ca_key_path, 'rb') as f:
             self.ca_private_key = serialization.load_pem_private_key(f.read(), password=None)
 
-        # Настройка главного сокета сервера
-        self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        # Позволяет переиспользовать порт сразу после перезапуска сервера
-        self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    @staticmethod
+    def _generate_ca_files(ca_path: str, ca_key_path: str):
+        key = rsa.generate_private_key(public_exponent=65537, key_size=4096)
+        now = datetime.now(timezone.utc)
+        subject = issuer = x509.Name([
+            x509.NameAttribute(NameOID.COUNTRY_NAME, "RU"),
+            x509.NameAttribute(NameOID.ORGANIZATION_NAME, "SUN_IN"),
+            x509.NameAttribute(NameOID.COMMON_NAME, "SUN_IN Private Root CA")
+        ])
+        cert = (
+            x509.CertificateBuilder()
+            .subject_name(subject)
+            .issuer_name(issuer)
+            .public_key(key.public_key())
+            .serial_number(x509.random_serial_number())
+            .not_valid_before(now)
+            .not_valid_after(now + timedelta(days=3650))
+            .add_extension(x509.BasicConstraints(ca=True, path_length=None), critical=True)
+            .sign(key, hashes.SHA256())
+        )
+        key_pem = key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.PKCS8,
+            encryption_algorithm=serialization.NoEncryption()
+        )
+        cert_pem = cert.public_bytes(serialization.Encoding.PEM)
+
+        os.makedirs(os.path.dirname(ca_key_path), exist_ok=True)
+        with open(ca_key_path, 'wb') as f:
+            f.write(key_pem)
+        with open(ca_path, 'wb') as f:
+            f.write(cert_pem)
+
+        # Синхронизируем client/private_ca.crt если папка client существует
+        client_ca_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'client', 'private_ca.crt')
+        try:
+            os.makedirs(os.path.dirname(client_ca_path), exist_ok=True)
+            with open(client_ca_path, 'wb') as f:
+                f.write(cert_pem)
+        except Exception:
+            pass
 
     def remove_client(self, client: ClientHandler):
         """Удаляет клиента из списка при отключении"""
-        if client in self.clients:
-            self.clients.remove(client)
-            logger.debug(f"Клиент удален. Всего онлайн: {len(self.clients)}")
+        with self.clients_lock:
+            if client in self.clients:
+                self.clients.remove(client)
+                logger.debug(f"Клиент удален. Всего онлайн: {len(self.clients)}")
 
-    def _init_db(self):
-        """Создание таблицы сертификатов"""
+    def _get_db_connection(self):
+        """Возвращает активное соединение с БД или None при ошибке"""
         try:
             conn = psycopg2.connect(
                 host=self.db_host,
                 port=self.db_port,
                 database=self.db_name,
                 user=self.db_user,
-                password=self.db_password
+                password=self.db_password,
+                connect_timeout=2
             )
+            self._db_available = True
+            return conn
+        except Exception:
+            self._db_available = False
+            return None
+
+    def _init_db(self):
+        """Создание таблицы сертификатов"""
+        conn = self._get_db_connection()
+        if not conn:
+            logger.warning("Ошибка инициализации БД (работа в fallback режиме: in-memory кэш)")
+            return
+
+        try:
             with conn.cursor() as cur:
                 cur.execute("""
                     CREATE TABLE IF NOT EXISTS certificates (
@@ -388,56 +437,60 @@ class ChatServer:
                     )
                 """)
             conn.commit()
-            conn.close()
-            logger.info("База данных PostgreSQL инициализирована.")
+            logger.info("База данных PostgreSQL успешно инициализирована.")
         except Exception as e:
-            logger.error(f"Ошибка инициализации БД: {e}")
+            self._db_available = False
+            logger.warning(f"Ошибка создания таблицы в БД (fallback режим): {e}")
+        finally:
+            conn.close()
 
     def _get_cert_from_db(self, nickname: str) -> Optional[str]:
         """Получение PEM-сертификата из БД по никнейму"""
+        if not self._db_available:
+            return self._in_memory_certs.get(nickname)
+
+        conn = self._get_db_connection()
+        if not conn:
+            return self._in_memory_certs.get(nickname)
+
         try:
-            conn = psycopg2.connect(
-                host=self.db_host,
-                port=self.db_port,
-                database=self.db_name,
-                user=self.db_user,
-                password=self.db_password
-            )
             with conn.cursor() as cur:
                 cur.execute("SELECT cert_pem FROM certificates WHERE nickname = %s", (nickname,))
                 row = cur.fetchone()
-                return row[0] if row else None
+                if row:
+                    return row[0]
         except Exception as e:
-            logger.error(f"Ошибка чтения из БД: {e}")
-            return None
+            logger.debug(f"Ошибка чтения из БД ({e}), поиск в in-memory кэше")
         finally:
-            if 'conn' in locals() and conn:
-                conn.close()
+            conn.close()
+        return self._in_memory_certs.get(nickname)
 
     def _save_cert_to_db(self, nickname: str, cert_pem: str):
         """Сохранение сертификата в БД"""
+        self._in_memory_certs[nickname] = cert_pem
+        if not self._db_available:
+            return
+
+        conn = self._get_db_connection()
+        if not conn:
+            return
+
         try:
-            conn = psycopg2.connect(
-                host=self.db_host,
-                port=self.db_port,
-                database=self.db_name,
-                user=self.db_user,
-                password=self.db_password
-            )
             with conn.cursor() as cur:
                 cur.execute(
                     "INSERT INTO certificates (nickname, cert_pem) VALUES (%s, %s)",
                     (nickname, cert_pem)
                 )
             conn.commit()
-            conn.close()
         except Exception as e:
-            logger.error(f"Ошибка записи в БД: {e}")
-            raise
+            logger.warning(f"Ошибка записи в БД (сохранено в fallback кэш): {e}")
+        finally:
+            conn.close()
 
     def get_online_users(self) -> list:
         """Возвращает список никнеймов онлайн пользователей"""
-        return [client.get_nickname() for client in self.clients if client.get_nickname()]
+        with self.clients_lock:
+            return [client.get_nickname() for client in self.clients if client.get_nickname()]
 
     def get_user_public_key(self, nickname: str) -> Optional[str]:
         client = self.find_client_by_nickname(nickname)
@@ -541,9 +594,10 @@ class ChatServer:
     
     def find_client_by_nickname(self, nickname: str) -> Optional[ClientHandler]:
         """Находит клиента по никнейму"""
-        for client in self.clients:
-            if client.get_nickname() == nickname:
-                return client
+        with self.clients_lock:
+            for client in self.clients:
+                if client.get_nickname() == nickname:
+                    return client
         return None
     
     def send_to_user(self, nickname: str, packet: Packet) -> bool:
@@ -562,50 +616,112 @@ class ChatServer:
     def broadcast(self, packet: Packet, exclude: ClientHandler = None):
         """Рассылка пакета всем подключенным клиентам исключая exclude"""
         logger.debug(f"Broadcast: {packet.msg_type} (исключая {exclude.nickname if exclude else 'никого'})")
+        with self.clients_lock:
+            clients_to_send = [c for c in self.clients if c != exclude]
+
         disconnected = []
-        
-        # Используем list(self.clients) для итерации по копии, 
-        # чтобы избежать RuntimeError, если список изменится во время цикла.
-        for client in list(self.clients):
-            if client == exclude:
-                continue
-            
+        for client in clients_to_send:
             try:
                 client.send_packet(packet)
             except Exception as e:
-                logger.error(f"Ошибка отправки клиенту {client.nickname if hasattr(client, 'nickname') else 'unknown'}: {e}")
+                logger.error(f"Ошибка отправки клиенту {getattr(client, 'nickname', 'unknown')}: {e}")
                 disconnected.append(client)
         
         # Удаляем отключенных клиентов
         for client in disconnected:
             client.disconnect()
 
+    def _handle_connection(self, websocket):
+        """Обработчик входящего WebSocket соединения"""
+        address = getattr(websocket, 'remote_address', ('127.0.0.1', 0))
+        logger.info(f"Новое WebSocket подключение: {address}")
+        client = ClientHandler(websocket, address, server=self)
+        with self.clients_lock:
+            self.clients.add(client)
+        client.start_listening()
+
+    def _process_http_request(self, conn, req):
+        """Отдает файлы локального веб-клиента при HTTP-запросе к серверу"""
+        if req.headers.get('Upgrade', '').lower() == 'websocket':
+            return None
+
+        base_client_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'client')
+        path = req.path.split('?')[0]
+        if path in ('/', '/index.html'):
+            file_path = os.path.join(base_client_dir, 'index.html')
+            content_type = 'text/html; charset=utf-8'
+        elif path == '/app.js':
+            file_path = os.path.join(base_client_dir, 'app.js')
+            content_type = 'application/javascript; charset=utf-8'
+        elif path == '/private_ca.crt':
+            body = self.ca_cert.public_bytes(serialization.Encoding.PEM)
+            headers = Headers([
+                ('Content-Type', 'application/x-x509-ca-cert'),
+                ('Content-Length', str(len(body))),
+                ('Access-Control-Allow-Origin', '*'),
+                ('Connection', 'close')
+            ])
+            return Response(200, 'OK', headers, body)
+        else:
+            rel_path = path.lstrip('/')
+            safe_path = os.path.normpath(os.path.join(base_client_dir, rel_path))
+            if safe_path.startswith(base_client_dir) and os.path.isfile(safe_path):
+                file_path = safe_path
+                if safe_path.endswith('.js'):
+                    content_type = 'application/javascript; charset=utf-8'
+                elif safe_path.endswith('.css'):
+                    content_type = 'text/css; charset=utf-8'
+                elif safe_path.endswith('.html'):
+                    content_type = 'text/html; charset=utf-8'
+                else:
+                    content_type = 'application/octet-stream'
+            else:
+                return conn.respond(404, 'Not Found')
+
+        if os.path.exists(file_path):
+            with open(file_path, 'rb') as f:
+                body = f.read()
+            headers = Headers([
+                ('Content-Type', content_type),
+                ('Content-Length', str(len(body))),
+                ('Access-Control-Allow-Origin', '*'),
+                ('Connection', 'close')
+            ])
+            return Response(200, 'OK', headers, body)
+        return conn.respond(404, 'Not Found')
+
     def start(self):
-        """Запуск сервера в основном потоке"""
+        """Запуск WebSocket сервера в основном потоке"""
         try:
-            self.server_socket.bind((self.host, self.port))
-            self.server_socket.listen()  # Слушаем и не ассуждаем
-            logger.info(f"Сервер запущен на {self.host}:{self.port}...")
-
-            while True:
-                # Метод accept() блокирует выполнение
-                client_socket, address = self.server_socket.accept()
-                logger.info(f"Новое подключение: {address}")
-
-                # Создаем обработчик
-                client = ClientHandler(client_socket, address, server=self)
-                self.clients.add(client)
-
-                # daemon=True означает, что поток завершится автоматически при выключении сервера
-                client_thread = threading.Thread(target=client.start_listening, daemon=True)
-                client_thread.start()
-
+            self.ws_server = serve(
+                self._handle_connection,
+                self.host,
+                self.port,
+                process_request=self._process_http_request
+            )
+            self.port = self.ws_server.socket.getsockname()[1]
+            logger.info(f"WebSocket сервер запущен на ws://{self.host}:{self.port}...")
+            logger.info(f"Веб-клиент доступен по адресу http://{self.host}:{self.port}...")
+            self.ws_server.serve_forever()
         except KeyboardInterrupt:
             logger.info("Остановка сервера...")
         except Exception as e:
             logger.error(f"Критическая ошибка сервера: {e}")
         finally:
-            self.server_socket.close()
+            self.stop()
+
+    def stop(self):
+        """Остановка сервера"""
+        if self.ws_server:
+            try:
+                self.ws_server.shutdown()
+            except Exception:
+                pass
+            self.ws_server = None
+        with self.clients_lock:
+            clients_list = list(self.clients)
+        for client in clients_list:
+            client.disconnect()
 
 
 if __name__ == '__main__':

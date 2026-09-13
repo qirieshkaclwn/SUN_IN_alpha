@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Sun In alpha CHAT</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #000;
+      color: #00ff66;
+      font-family: Consolas, "Courier New", monospace;
+    }
+    .page {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      box-sizing: border-box;
+    }
+    .frame {
+      width: 980px;
+      max-width: 100%;
+      border: 2px solid #00a000;
+      background: #0d0d0d;
+      box-shadow: 0 0 20px #003300;
+    }
+    .banner {
+      background: #003300;
+      color: #00ff88;
+      border-bottom: 2px solid #00a000;
+      padding: 10px 14px;
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .status-badge {
+      font-size: 14px;
+      padding: 3px 8px;
+      border: 1px solid #7a7a7a;
+      background: #1a1a1a;
+      color: #aaa;
+    }
+    .status-badge.online {
+      border-color: #00ff00;
+      color: #00ff00;
+      background: #002200;
+    }
+    .content {
+      display: flex;
+      min-height: 520px;
+    }
+    .nav {
+      width: 220px;
+      border-right: 2px solid #00a000;
+      padding: 14px;
+      box-sizing: border-box;
+      background: #080808;
+    }
+    .nav h3 {
+      margin-top: 0;
+      color: #ffd37a;
+      font-size: 18px;
+    }
+    .nav ul {
+      list-style: none;
+      padding-left: 0;
+      margin: 0 0 16px 0;
+      line-height: 1.4;
+      font-size: 14px;
+    }
+    .nav li { color: #00ffff; }
+    #users_list {
+      max-height: 200px;
+      overflow-y: auto;
+      border: 1px solid #333;
+      padding: 6px;
+      background: #020202;
+      font-size: 13px;
+      color: #d4ffff;
+    }
+    .main {
+      flex: 1;
+      padding: 16px;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+    }
+    .form-row {
+      margin-bottom: 8px;
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      font-size: 15px;
+      flex-wrap: wrap;
+    }
+    .label {
+      color: #ffd37a;
+      font-weight: 700;
+      min-width: 40px;
+    }
+    input[type="text"], input[type="number"], input[type="password"] {
+      box-sizing: border-box;
+      border: 1px solid #7a7a7a;
+      background: #101010;
+      color: #d4ffff;
+      padding: 5px 8px;
+      font-size: 15px;
+      font-family: Consolas, monospace;
+    }
+    button {
+      border: 1px solid #9a9a9a;
+      background: #1d1d1d;
+      color: #fff;
+      padding: 5px 12px;
+      font-size: 14px;
+      font-family: Consolas, monospace;
+      cursor: pointer;
+    }
+    button:hover { background: #333; }
+    button:disabled { opacity: 0.5; cursor: default; }
+    .help {
+      margin: 6px 0;
+      color: #88cc88;
+      font-size: 13px;
+    }
+    #log {
+      flex: 1;
+      height: 280px;
+      background: #040404;
+      border: 1px solid #00a000;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      font-family: "Lucida Console", Consolas, monospace;
+      color: #eee;
+      font-size: 14px;
+      padding: 8px;
+      line-height: 1.35;
+      margin-top: 6px;
+    }
+    .footer {
+      border-top: 1px solid #00a000;
+      text-align: center;
+      color: #888;
+      padding: 8px;
+      font-size: 13px;
+      background: #050505;
+    }
+    .hidden-file { display: none; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="frame">
+      <div class="banner">
+        <span>SUN_IN ALPHA CHAT [WEBSOCKET E2E]</span>
+        <span id="statusBadge" class="status-badge">DISCONNECTED</span>
+      </div>
+
+      <div class="content">
+        <aside class="nav">
+          <h3>О чатике:</h3>
+          <ul>
+            <li>- WebSocket транспорт</li>
+            <li>- Native WebCrypto API</li>
+            <li>- E2E RSA+AES-GCM</li>
+            <li>- PKI сертификаты</li>
+            <li>- Без сторонних lib</li>
+          </ul>
+
+          <h3>Онлайн (<span id="onlineCount">0</span>):</h3>
+          <div id="users_list">Нет пользователей</div>
+        </aside>
+
+        <main class="main">
+          <div class="form-row">
+            <span class="label">Host:</span>
+            <input id="host" type="text" value="127.0.0.1" style="width: 110px;" />
+            <span class="label">Port:</span>
+            <input id="port" type="number" value="8888" style="width: 75px;" />
+            <span class="label">Nick:</span>
+            <input id="nickname" type="text" placeholder="alice" style="width: 110px;" />
+            <button id="btnConnect" onclick="connectChat()">Connect</button>
+            <button id="btnDisconnect" onclick="disconnectChat()" disabled>Disconnect</button>
+          </div>
+
+          <div class="form-row">
+            <span class="label">To:</span>
+            <input id="to" type="text" placeholder="bob" style="width: 110px;" />
+            <input id="text" type="text" placeholder="Сообщение..." style="flex: 1;" onkeydown="if(event.key==='Enter') sendMsg()" />
+            <button id="btnSend" onclick="sendMsg()" disabled>Send</button>
+          </div>
+
+          <div class="form-row" style="margin-top: 4px;">
+            <span class="label">Cert:</span>
+            <input id="cert_password" type="password" placeholder="пароль backup .enc" style="width: 180px;" />
+            <button onclick="exportCrt()">Export .enc</button>
+            <button onclick="document.getElementById('importFileInput').click()">Import .enc</button>
+            <input type="file" id="importFileInput" class="hidden-file" accept=".enc" onchange="handleImportFile(event)" />
+          </div>
+
+          <div class="help">Приватные сообщения шифруются E2E (AES-GCM + RSA-OAEP). Сервер пересылает только шифротекст.</div>
+          <div id="log"></div>
+        </main>
+      </div>
+
+      <div class="footer">
+        SUN_IN E2E WebSocket Chat • Pure Native Browser Client
+      </div>
+    </div>
+  </div>
+
+  <!-- Библиотека x509 для работы с сертификатами и CSR через WebCrypto -->
+  <script src="x509.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
